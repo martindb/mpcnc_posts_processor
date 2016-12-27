@@ -3,6 +3,7 @@
 MPCNC posts processor for milling and laser/plasma cutting.
 
 Some design points:
+- Setup operation types: Milling, Water/Laser/Plasma
 - Only support MM units (inches may work with custom start gcode - NOT TESTED)
 - XY and Z independent travel speeds. Rapids are done with G1.
 - Arcs support on XY plane
@@ -67,7 +68,6 @@ allowedCircularPlanes	=	undefined;
 // Misc variables
 var powerState = false;
 var cutterOn;
-var ttt;
 
 // Called in every new gcode file
 function onOpen() {
@@ -117,7 +117,7 @@ function onSection() {
   }
 
   // Tool change
-  if(toolChangeEnabled && !isFirstSection() && tool.number != getPreviousSection().getTool().number) {
+  if(properties.toolChangeEnabled && !isFirstSection() && tool.number != getPreviousSection().getTool().number) {
     toolChange();
   }
 

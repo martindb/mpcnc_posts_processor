@@ -241,12 +241,12 @@ function rapidMovements(_x, _y, _z) {
   var z = zOutput.format(_z);
 
   if(z) {
-    f = fOutput.format(travelSpeedZ);
+    f = fOutput.format(properties.travelSpeedZ);
     fOutput.reset();
     writeln("G1" + z + f);
   }
   if(x || y) {
-    f = fOutput.format(travelSpeedXY);
+    f = fOutput.format(properties.travelSpeedXY);
     fOutput.reset();
     writeln("G1" + x + y + f);
   }
@@ -301,10 +301,10 @@ function toolChange() {
 
     // Go to tool change position
     if(properties.toolChangeZ != "") {
-      writeln("G1 " + properties.toolChangeZ + fOutput.format(travelSpeedZ));
+      writeln("G1 " + properties.toolChangeZ + fOutput.format(properties.travelSpeedZ));
     }
     if(properties.toolChangeXY != "") {
-      writeln("G1 " + properties.toolChangeXY + fOutput.format(travelSpeedXY));
+      writeln("G1 " + properties.toolChangeXY + fOutput.format(properties.travelSpeedXY));
     }
 
     // Ask tool change and wait user to touch lcd button

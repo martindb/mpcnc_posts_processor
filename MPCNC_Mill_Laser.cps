@@ -307,6 +307,9 @@ function toolChange() {
       writeln("G1 " + properties.toolChangeXY + fOutput.format(properties.travelSpeedXY));
     }
 
+    // Disable Z stepper
+    writeln("M18 Z");
+
     // Ask tool change and wait user to touch lcd button
     writeln("M0 Put tool " + tool.number + " - " + getToolTypeName(tool.type));
 

@@ -152,7 +152,7 @@ G92 Z0.8
 G1  Z40 F300
 M0 Detach ZProbe
 ; +------- Tool probed -------+ 
-M0 Turn ON spinde
+M0 Turn ON spindle
 ; *======== START end ==========* 
 ;2D Make pocket - Milling - Tool: 1 - flat end mill
 ;X Min: -22.913 - X Max: 22.913
@@ -175,7 +175,7 @@ M400
 M300 S400 P2000
 G1  Z40 F300
 G1  X0 Y0 F2500
-M0 Turn OFF spinde
+M0 Turn OFF spindle
 M0 Put tool 2 - flat end mill
 ; +------- Probe tool -------+ 
 M0 Attach ZProbe
@@ -184,7 +184,7 @@ G92 Z0.8
 G1  Z40 F300
 M0 Detach ZProbe
 ; +------- Tool probed -------+ 
-M0 Turn ON spinde
+M0 Turn ON spindle
 ; *======== CHANGE TOOL end ==========* 
 ;2D Small square - Milling - Tool: 2 - flat end mill
 ;X Min: -5.75 - X Max: 5.75
@@ -206,7 +206,7 @@ G0 Z15
 M400
 M117 Job end
 G0 X0 Y0 F2500
-M0 Turn OFF spinde. COMPLETE!
+M0 Turn OFF spindle. COMPLETE!
 ; *======== STOP end ==========* 
 
 ```

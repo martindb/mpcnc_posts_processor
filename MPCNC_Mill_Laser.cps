@@ -95,7 +95,7 @@ function onClose() {
     }
     if(properties.manualSpindlePowerControl)
     {
-        writeln("M0 Turn OFF spinde. COMPLETE!");
+        writeln("M0 Turn OFF spindle. COMPLETE!");
     }
     writeComment(" *======== STOP end ==========* ");
   } else {
@@ -125,7 +125,7 @@ function onSection() {
     }
     if(properties.manualSpindlePowerControl)
     {
-        writeln("M0 Turn ON spinde");
+        writeln("M0 Turn ON spindle");
     }
     writeComment(" *======== START end ==========* ");
   }
@@ -325,7 +325,7 @@ function toolChange() {
 
     if(properties.manualSpindlePowerControl)
     {
-        writeln("M0 Turn OFF spinde");
+        writeln("M0 Turn OFF spindle");
     }
     // Ask tool change and wait user to touch lcd button
     writeln("M0 Put tool " + tool.number + " - " + getToolTypeName(tool.type));
@@ -336,7 +336,7 @@ function toolChange() {
     }
     if(properties.manualSpindlePowerControl)
     {
-        writeln("M0 Turn ON spinde");
+        writeln("M0 Turn ON spindle");
     }
     writeComment(" *======== CHANGE TOOL end ==========* ");
   } else {

@@ -15,7 +15,7 @@ Some design points:
 - Support for 3 different laser power using "cutting modes" (through, etch, vaporize)
 
 
-# User Properties:
+# User Properties
 
 
 ## Travel speeds
@@ -128,3 +128,85 @@ Some design points:
 **cutterOff**:
   Define gcode to turn off laser/plasma.
   Defaults to **"M107"**.
+
+
+# Sample of issued code blocks
+
+## Job Start
+
+```
+;Fusion 360 CAM 2.0.4860
+;Posts processor: MPCNC_Mill_Laser.cps
+;Gcode generated: Monday, November 26, 2018 4:20:09 PM GMT
+;Document: cam3 v1
+;Setup: Setup3
+; *======== START begin ==========* 
+G90
+G21
+M84 S0
+G92 X0 Y0 Z0
+; +------- Probe tool -------+ 
+M0 Attach ZProbe
+G28 Z
+G92 Z0.8
+G1  Z40 F300
+M0 Detach ZProbe
+; +------- Tool probed -------+ 
+M0 Turn ON spinde
+; *======== START end ==========* 
+;2D Make pocket - Milling - Tool: 1 - flat end mill
+;X Min: -22.913 - X Max: 22.913
+;Y Min: -17.913 - Y Max: 17.913
+;Z Min: -3 - Z Max: 15
+M400
+M117 2D Make pocket
+G0 Z15
+.......
+```
+
+## Tool change
+
+```
+.......
+G0 Z15
+
+; *======== CHANGE TOOL begin ==========* 
+M400
+M300 S400 P2000
+G1  Z40 F300
+G1  X0 Y0 F2500
+M0 Turn OFF spinde
+M0 Put tool 2 - flat end mill
+; +------- Probe tool -------+ 
+M0 Attach ZProbe
+G28 Z
+G92 Z0.8
+G1  Z40 F300
+M0 Detach ZProbe
+; +------- Tool probed -------+ 
+M0 Turn ON spinde
+; *======== CHANGE TOOL end ==========* 
+;2D Small square - Milling - Tool: 2 - flat end mill
+;X Min: -5.75 - X Max: 5.75
+;Y Min: -6.2 - Y Max: 5.75
+;Z Min: -1 - Z Max: 15
+M400
+M117 2D Small square
+G0 Z15
+.......
+```
+
+## Job End
+
+```
+.......
+G0 Z15
+
+; *======== STOP begin ==========* 
+M400
+M117 Job end
+G0 X0 Y0 F2500
+M0 Turn OFF spinde. COMPLETE!
+; *======== STOP end ==========* 
+
+```

@@ -16,23 +16,30 @@ Some design points:
 
 // user-defined properties
 properties = {
-  cutterOnThrough: "M106 S200",     // GCode command to turn on the laser/plasma cutter in through mode
-  cutterOnEtch: "M106 S100",        // GCode command to turn on the laser/plasma cutter in etch mode
-  cutterOnVaporize: "M106 S255",    // GCode command to turn on the laser/plasma cutter in vaporize mode
-  cutterOff: "M107",                // Gcode command to turn off the laser/plasma cutter
   travelSpeedXY: 2500,              // High speed for travel movements X & Y (mm/min)
   travelSpeedZ: 300,                // High speed for travel movements Z (mm/min)
+  manualSpindlePowerControl:true,   // Spindle motor is controlled by manual switch 
   setOriginOnStart: true,           // Set origin when gcode start (G92)
   goOriginOnFinish: true,           // Go X0 Y0 Z0 at gcode end
+  toolChangeEnabled: true,          // Enable tool change code (bultin tool change requires LCD display)
+  toolChangeX: 0,                   // X&Y position for builtin tool change
+  toolChangeY: 0,                   // X&Y position for builtin tool change
+  toolChangeZ: 40,                  // Z position for builtin tool change
+  toolChangeZProbe: true,           // Z probe after tool change
+  toolChangeDisableZStepper: false, // disable Z stepper when change a tool
+  probeOnStart: true,               // Execute probe gcode to align tool
+  probeThickness: 0.8,              // plate thickness
+  probeUseHomeZ:true,               // use G28 or G38 for probing 
+  probeG38Target: -10,              // probing up to pos 
+  probeG38Speed: 30,                // probing with speed 
   gcodeStartFile: "",               // File with custom Gcode for header/start (in nc folder)
   gcodeStopFile: "",                // File with custom Gcode for footer/end (in nc folder)
   gcodeToolFile: "",                // File with custom Gcode for tool change (in nc folder)
   gcodeProbeFile: "",               // File with custom Gcode for tool probe (in nc folder)
-  toolChangeEnabled: true,          // Enable tool change code (bultin tool change requires LCD display)
-  toolChangeXY: "X0 Y0",            // X&Y position for builtin tool change
-  toolChangeZ: "Z30",               // Z position for builtin tool change
-  toolChangeZProbe: true,           // Z probe after tool change
-  probeOnStart: true                // Execute probe gcode to align tool
+  cutterOnThrough: "M106 S200",     // GCode command to turn on the laser/plasma cutter in through mode
+  cutterOnEtch: "M106 S100",        // GCode command to turn on the laser/plasma cutter in etch mode
+  cutterOnVaporize: "M106 S255",    // GCode command to turn on the laser/plasma cutter in vaporize mode
+  cutterOff: "M107"                 // Gcode command to turn off the laser/plasma cutter
 };
 
 // Internal properties
@@ -77,16 +84,20 @@ function onOpen() {
 
 // Called at end of gcode file
 function onClose() {
-
-  // End message to LCD
+    writeComment(" *======== STOP begin ==========* ");
   writeln("M400");
   writeln("M117 Job end");
 
   if(properties.gcodeStopFile == "") {
     if(properties.goOriginOnFinish) {
-      writeln("G1 X0 Y0" + fOutput.format(properties.travelSpeedXY)); // Go to XY origin
-      writeln("G1 Z0" + fOutput.format(properties.travelSpeedZ)); // Go to Z origin
+      writeln("G0 X0 Y0" + fOutput.format(properties.travelSpeedXY)); // Go to XY origin
+      //writeln("G1 Z0" + fOutput.format(properties.travelSpeedZ)); // Go to Z origin
     }
+    if(properties.manualSpindlePowerControl)
+    {
+        writeln("M0 Turn OFF spinde. COMPLETE!");
+    }
+    writeComment(" *======== STOP end ==========* ");
   } else {
     loadFile(properties.gcodeStopFile);
   }
@@ -98,7 +109,7 @@ function onSection() {
 
   // Write Start gcode of the documment (after the "onParameters" with the global info)
   if(isFirstSection()) {
-    writeln("");
+    writeComment(" *======== START begin ==========* ");
     if(properties.gcodeStartFile == "") {
       writeln("G90"); // Set to Absolute Positioning
       writeln("G21"); // Set Units to Millimeters
@@ -106,14 +117,17 @@ function onSection() {
       if(properties.setOriginOnStart) {
         writeln("G92 X0 Y0 Z0"); // Set origin to initial position
       }
-      writeln("");
     } else {
       loadFile(properties.gcodeStartFile);
     }
-
     if(properties.probeOnStart && tool.number != 0) {
       probeTool();
     }
+    if(properties.manualSpindlePowerControl)
+    {
+        writeln("M0 Turn ON spinde");
+    }
+    writeComment(" *======== START end ==========* ");
   }
 
   // Tool change
@@ -243,12 +257,12 @@ function rapidMovements(_x, _y, _z) {
   if(z) {
     f = fOutput.format(properties.travelSpeedZ);
     fOutput.reset();
-    writeln("G1" + z + f);
+    writeln("G0" + z + f);
   }
   if(x || y) {
     f = fOutput.format(properties.travelSpeedXY);
     fOutput.reset();
-    writeln("G1" + x + y + f);
+    writeln("G0" + x + y + f);
   }
   return;
 }
@@ -293,31 +307,38 @@ function circularMovements(_clockwise, _cx, _cy, _cz, _x,	_y, _z, _feed) {
 function toolChange() {
   if(properties.gcodeToolFile == "") {
     // Builtin tool change gcode
-    writeComment("Tool Change");
+    writeComment(" *======== CHANGE TOOL begin ==========* ");
 
     // Beep
     writeln("M400"); // Wait movement buffer it's empty
     writeln("M300 S400 P2000");
 
     // Go to tool change position
-    if(properties.toolChangeZ != "") {
-      writeln("G1 " + properties.toolChangeZ + fOutput.format(properties.travelSpeedZ));
-    }
-    if(properties.toolChangeXY != "") {
-      writeln("G1 " + properties.toolChangeXY + fOutput.format(properties.travelSpeedXY));
-    }
+    writeln("G1 " + zOutput.format(properties.toolChangeZ) + fOutput.format(properties.travelSpeedZ));
+    writeln("G1 " + xOutput.format(properties.toolChangeX) +yOutput.format(properties.toolChangeY) + fOutput.format(properties.travelSpeedXY));
 
     // Disable Z stepper
-    writeln("M18 Z");
+    if(properties.toolChangeDisableZStepper)
+    {
+        writeln("M18 Z");
+    }
 
+    if(properties.manualSpindlePowerControl)
+    {
+        writeln("M0 Turn OFF spinde");
+    }
     // Ask tool change and wait user to touch lcd button
     writeln("M0 Put tool " + tool.number + " - " + getToolTypeName(tool.type));
 
     // Run Z probe gcode
     if(properties.toolChangeZProbe && tool.number != 0) {
-      writeComment("Z Probe gcode goes here");
+      probeTool();
     }
-    writeln("");
+    if(properties.manualSpindlePowerControl)
+    {
+        writeln("M0 Turn ON spinde");
+    }
+    writeComment(" *======== CHANGE TOOL end ==========* ");
   } else {
     // Custom tool change gcode
     loadFile(properties.gcodeToolFile);
@@ -327,8 +348,21 @@ function toolChange() {
 // Probe tool
 function probeTool() {
   if(properties.gcodeProbeFile == "") {
-    writeComment("Probe tool - Not yet implemented");
-    writeln("");
+    writeComment(" +------- Probe tool -------+ ");
+    writeln("M0 Attach ZProbe");
+    // refer http://marlinfw.org/docs/gcode/G038.html
+    if(properties.probeUseHomeZ)
+    {
+        writeln("G28 Z"); 
+    } else {
+        writeln("G38.3 " + fOutput.format(properties.probeG38Speed) + " " + zOutput.format(properties.probeG38Target)); 
+    }
+    writeln("G92" + zOutput.format(properties.probeThickness)); 
+    if(properties.toolChangeZ != "") { // move up tool to safe height again after probing
+      writeln("G1 " + zOutput.format(properties.toolChangeZ) + fOutput.format(properties.travelSpeedZ));
+    }  
+    writeln("M0 Detach ZProbe");
+    writeComment(" +------- Tool probed -------+ ");
   } else {
     loadFile(properties.gcodeProbeFile);
   }

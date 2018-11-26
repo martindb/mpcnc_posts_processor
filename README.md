@@ -68,7 +68,7 @@ Some design points:
   Defaults to **true**.
   
 **toolChangeDisableZStepper**
-  Disable Z stepper when when change a tool.
+  Disable Z stepper when change a tool.
   Defaults to **false**.
   
 ## Z Probe
@@ -81,7 +81,7 @@ Some design points:
   Thickness of the probe plate.
   Defaults to **0.8**.
 
-**probeThickness**: 
+**probeUseHomeZ**: 
   Use "G28 Z" or "G38.3". True means G28.
   Defaults to **true**.
 

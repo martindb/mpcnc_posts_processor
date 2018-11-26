@@ -18,7 +18,7 @@ Some design points:
 # User Properties:
 
 
-** Travel speeds **
+## Travel speeds
 
 **travelSpeedXY**:
   High speed for travel movements X & Y (mm/min).
@@ -28,7 +28,7 @@ Some design points:
   High speed for travel movements Z (mm/min).
   Defaults to **300 mm/min**.
 
-** Origins **
+## Origins
 
 **setOriginOnStart**:
   Set origin when gcode start (G92 X0 Y0 Z0). Only apply if not using gcodeStartFile.
@@ -71,7 +71,7 @@ Some design points:
   Disable Z stepper when when change a tool.
   Defaults to **false**.
   
-** Z Probe **  
+## Z Probe
 
 **probeOnStart**: 
   Execute tool probe gcode to align tool prior to milling start. Tool number must be diffent than 0 (0 used for laser/plasma). If gcodeProbeFile is not set, use builtin tool probe gcode.
@@ -93,7 +93,7 @@ Some design points:
   Speed of Z probing with G38.
   Defaults to **30**.
 
-** Override behaviour by external files **
+## Override behaviour by external files
 
 **gcodeStartFile**:
   File with custom gcode for header/start. The file must be in nc folder. If set, content in this file overrides builtin start gcode.
@@ -111,7 +111,7 @@ Some design points:
   File with custom Gcode for tool probe. The file must be in nc folder. If set, content in this file overrides builtin tool probe gcode.
   No default.
 
-**Laser/Plasma related**
+## Laser/Plasma related
 
 **cutterOnThrough**:
   Define gcode command for turn on laser/plasma in trough (any quality) cutting mode.

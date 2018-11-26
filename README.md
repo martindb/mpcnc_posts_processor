@@ -38,13 +38,13 @@ Some design points:
   Go X0 Y0 at gcode end. Useful to find if your machine loss steeps or have any other mechanic issue (like loose pulleys). Also useful for repetitive jobs. Only apply if not using gcodeStopFile.
   Defaults to **true**.
 
-** Spindel **
+## Spindel
 
 **manualSpindlePowerControl**:
   Set it to true when the motor of your spindle is controlled by manual switch. So the preprocessor will issue additional pauses for TURN ON/TURN OFF the motor.
   Defaults to **true**.
   
-** Tool change **
+## Tool change
 
 **toolChangeEnabled**:
   Enable tool change gcode. If gcodeToolFile is not set, use builtin tool change gcode.

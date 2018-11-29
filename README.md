@@ -132,51 +132,58 @@ Some design points:
 
 # Sample of issued code blocks
 
-## Job Start
+## Gcode of milling with manually control spindel
 
-```
+```G-code
 ;Fusion 360 CAM 2.0.4860
-;Posts processor: MPCNC_Mill_Laser.cps
-;Gcode generated: Monday, November 26, 2018 4:20:09 PM GMT
-;Document: cam3 v1
-;Setup: Setup3
+; Posts processor: MPCNC_Mill_Laser.cps
+; Gcode generated: Thursday, November 29, 2018 4:28:11 PM GMT
+; Document: cam_testpp v1
+; Setup: Setup1
 ; *======== START begin ==========* 
 G90
 G21
 M84 S0
 G92 X0 Y0 Z0
+; COMMAND_TOOL_MEASURE
 ; +------- Probe tool -------+ 
 M0 Attach ZProbe
 G28 Z
 G92 Z0.8
-G1  Z40 F300
+G1 Z40 F300
 M0 Detach ZProbe
 ; +------- Tool probed -------+ 
-M0 Turn ON spindle
+; COMMAND_START_SPINDLE
+; COMMAND_SPINDLE_CLOCKWISE
+M0 Turn ON CLOCKWISE
 ; *======== START end ==========* 
-;2D Make pocket - Milling - Tool: 1 - flat end mill
-;X Min: -22.913 - X Max: 22.913
-;Y Min: -17.913 - Y Max: 17.913
-;Z Min: -3 - Z Max: 15
+;2D Contour1 - Milling - Tool: 1 - 1/8inchflat end mill
+; X Min: 2.588 - X Max: 49.412
+; Y Min: 2.588 - Y Max: 49.412
+; Z Min: -1 - Z Max: 15
 M400
-M117 2D Make pocket
+M117 2D Contour1
 G0 Z15
-.......
-```
-
-## Tool change
-
-```
-.......
+G0 X49.412 Y26 F2500
+G0 Z5 F300
+G1 Z1 F100
+G1 Z-1
+G1 Y49.412 F300
+G1 X2.588
+G1 Y2.588
+G1 X49.412
+G1 Y26
 G0 Z15
 
 ; *======== CHANGE TOOL begin ==========* 
 M400
 M300 S400 P2000
-G1  Z40 F300
-G1  X0 Y0 F2500
+G0 Z40 F300
+G0 X0 Y0 F2500
+; COMMAND_STOP_SPINDLE
 M0 Turn OFF spindle
-M0 Put tool 2 - flat end mill
+M0 Put tool 2 - 1.5mm
+; COMMAND_TOOL_MEASURE
 ; +------- Probe tool -------+ 
 M0 Attach ZProbe
 G28 Z
@@ -184,29 +191,191 @@ G92 Z0.8
 G1  Z40 F300
 M0 Detach ZProbe
 ; +------- Tool probed -------+ 
-M0 Turn ON spindle
+; COMMAND_START_SPINDLE
+; COMMAND_SPINDLE_CLOCKWISE
+M0 Turn ON CLOCKWISE
 ; *======== CHANGE TOOL end ==========* 
-;2D Small square - Milling - Tool: 2 - flat end mill
-;X Min: -5.75 - X Max: 5.75
-;Y Min: -6.2 - Y Max: 5.75
-;Z Min: -1 - Z Max: 15
+;Trace1 - Milling - Tool: 2 - 1.5mmflat end mill
+; X Min: 16 - X Max: 36
+; Y Min: 16 - Y Max: 36
+; Z Min: -1 - Z Max: 15
 M400
-M117 2D Small square
+M117 Trace1
 G0 Z15
-.......
-```
-
-## Job End
-
-```
-.......
+G0 X36 Y36 F2500
+G0 Z4 F300
+G1 Z-1 F300
+G1 Y16
+G1 X16
+G1 Y36
+G1 X36
+G1 Z4
 G0 Z15
 
 ; *======== STOP begin ==========* 
 M400
-M117 Job end
+; COMMAND_STOP_SPINDLE
+M0 Turn OFF spindle
 G0 X0 Y0 F2500
-M0 Turn OFF spindle. COMPLETE!
+M117 Job end
+; *======== STOP end ==========* 
+```
+
+## Gcode of milling with spindel controlled by M3/M4/M5
+
+```G-code
+;Fusion 360 CAM 2.0.4860
+; Posts processor: MPCNC_Mill_Laser.cps
+; Gcode generated: Thursday, November 29, 2018 4:31:32 PM GMT
+; Document: cam_testpp v1
+; Setup: Setup1
+; *======== START begin ==========* 
+G90
+G21
+M84 S0
+G92 X0 Y0 Z0
+; COMMAND_TOOL_MEASURE
+; +------- Probe tool -------+ 
+M0 Attach ZProbe
+G28 Z
+G92 Z0.8
+G1 Z40 F300
+M0 Detach ZProbe
+; +------- Tool probed -------+ 
+; COMMAND_START_SPINDLE
+; COMMAND_SPINDLE_CLOCKWISE
+M3 S21000
+; *======== START end ==========* 
+;2D Contour1 - Milling - Tool: 1 - 1/8inchflat end mill
+; X Min: 2.588 - X Max: 49.412
+; Y Min: 2.588 - Y Max: 49.412
+; Z Min: -1 - Z Max: 15
+M400
+M117 2D Contour1
+G0 Z15
+G0 X49.412 Y26 F2500
+G0 Z5 F300
+G1 Z1 F100
+G1 Z-1
+G1 Y49.412 F300
+G1 X2.588
+G1 Y2.588
+G1 X49.412
+G1 Y26
+G0 Z15
+
+; *======== CHANGE TOOL begin ==========* 
+M400
+M300 S400 P2000
+G0 Z40 F300
+G0 X0 Y0 F2500
+; COMMAND_STOP_SPINDLE
+M5
+M0 Put tool 2 - 1.5mm
+; COMMAND_TOOL_MEASURE
+; +------- Probe tool -------+ 
+M0 Attach ZProbe
+G28 Z
+G92 Z0.8
+G1  Z40 F300
+M0 Detach ZProbe
+; +------- Tool probed -------+ 
+; COMMAND_START_SPINDLE
+; COMMAND_SPINDLE_CLOCKWISE
+M3 S21000
+; *======== CHANGE TOOL end ==========* 
+;Trace1 - Milling - Tool: 2 - 1.5mmflat end mill
+; X Min: 16 - X Max: 36
+; Y Min: 16 - Y Max: 36
+; Z Min: -1 - Z Max: 15
+M400
+M117 Trace1
+G0 Z15
+G0 X36 Y36 F2500
+G0 Z4 F300
+G1 Z-1 F300
+G1 Y16
+G1 X16
+G1 Y36
+G1 X36
+G1 Z4
+G0 Z15
+
+; *======== STOP begin ==========* 
+M400
+; COMMAND_STOP_SPINDLE
+M5
+G0 X0 Y0 F2500
+M117 Job end
+; *======== STOP end ==========* 
+```
+
+## Gcode of laser cutting
+
+```G-code
+;Fusion 360 CAM 2.0.4860
+; Posts processor: MPCNC_Mill_Laser.cps
+; Gcode generated: Thursday, November 29, 2018 4:32:05 PM GMT
+; Document: cam_testpp v1
+; Setup: Setup2
+; *======== START begin ==========* 
+G90
+G21
+M84 S0
+G92 X0 Y0 Z0
+; COMMAND_TOOL_MEASURE
+; COMMAND_START_SPINDLE
+; COMMAND_SPINDLE_COUNTERCLOCKWISE
+; *======== START end ==========* 
+;2D Profile1 - Laser/Plasma - Cutting mode: auto
+; X Min: -25 - X Max: 25
+; Y Min: -25.5 - Y Max: 25
+; Z Min: 0 - Z Max: 15
+M400
+M117 2D Profile1
+G0 Z15 F300
+G0 X-9.94 Y-10.5 F2500
+G0 Z0 F300
+; LASER Power ON
+M106 S200
+; COMMAND_POWER_ON
+G1 Y-10 F1000
+G1 X-9.95
+G1 X-10
+G1 Y10
+G1 X10
+G1 Y-10
+G1 X-9.95
+G1 X-9.96
+G1 Y-10.5
+; LASER Power OFF
+M107
+; COMMAND_POWER_OFF
+G0 Z5 F300
+G0 X-9.99 Y-25.5 F2500
+G0 Z0 F300
+; LASER Power ON
+M106 S200
+; COMMAND_POWER_ON
+G1 Y-25 F1000
+G1 X-10
+G1 X-25
+G1 Y25
+G1 X25
+G1 Y-25
+G1 X-10
+G1 X-10.01
+G1 Y-25.5
+; LASER Power OFF
+M107
+; COMMAND_POWER_OFF
+G0 Z15 F300
+
+; *======== STOP begin ==========* 
+M400
+; COMMAND_STOP_SPINDLE
+G0 X0 Y0 F2500
+M117 Job end
 ; *======== STOP end ==========* 
 
 ```

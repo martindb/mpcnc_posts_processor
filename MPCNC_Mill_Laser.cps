@@ -126,7 +126,7 @@ certificationLevel = 2;
 extension = "gcode";
 setCodePage("ascii");
 capabilities = CAPABILITY_MILLING | CAPABILITY_JET;
-description = "MPCNC Milling/Laser";
+description = "MPCNC Marlin 2.0 Milling/Laser";
 
 // Formats
 var xyzFormat = createFormat({ decimals: 3 });

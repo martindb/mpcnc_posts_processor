@@ -68,7 +68,7 @@ Extern: Tool File|File with custom Gcode for tool change (in nc folder)||
 Extern: Probe File|File with custom Gcode for tool probe (in nc folder)||
 
 
-## Group 5: Manage coolant control pins
+## Group 6: Manage coolant control pins
 
 |Title|Description|Default|Values|
 |---|---|---|---|
@@ -260,7 +260,7 @@ M117 Job end
 ; *======== STOP end ==========* 
 ```
 
-## Gcode of milling with spindel controlled by M3/M4/M5 with usin Coolants (both A and B channels)
+## Gcode of milling with spindel controlled by M3/M4/M5 with using Coolants (both A and B channels)
 
 ```G-code
 ;Fusion 360 CAM 2.0.5044

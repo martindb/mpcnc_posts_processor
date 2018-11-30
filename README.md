@@ -20,13 +20,10 @@ Some design points:
 
 ## Travel speeds
 
-**travelSpeedXY**:
-  High speed for travel movements X & Y (mm/min).
-  Defaults to **2500 mm/min**.
-
-**travelSpeedZ**:
-  High speed for travel movements Z (mm/min).
-  Defaults to **300 mm/min**.
+|Title|Description|Default|
+|---|---|---|
+Job: Travel Speed XY|High speed for travel movements X & Y (mm/min).|**2500 mm/min**|
+Job: Travel Speed Z|High speed for travel movements Z (mm/min).|**300 mm/min**|
 
 ## Origins
 

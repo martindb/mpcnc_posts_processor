@@ -44,9 +44,9 @@ properties = {
   gcodeToolFile: "",                // File with custom Gcode for tool change (in nc folder)
   gcodeProbeFile: "",               // File with custom Gcode for tool probe (in nc folder)
     
+  cutterOnVaporize: "M106 S255",    // GCode command to turn on the laser/plasma cutter in vaporize mode
   cutterOnThrough: "M106 S200",     // GCode command to turn on the laser/plasma cutter in through mode
   cutterOnEtch: "M106 S100",        // GCode command to turn on the laser/plasma cutter in etch mode
-  cutterOnVaporize: "M106 S255",    // GCode command to turn on the laser/plasma cutter in vaporize mode
   cutterOff: "M107"                 // Gcode command to turn off the laser/plasma cutter
 };
 
@@ -63,17 +63,17 @@ propertyDefinitions = {
   toolChangeY: {title:"Change: Y", description:"Y position for builtin tool change", group:2, type:"integer", default_mm:0 },
   toolChangeZ: {title:"Change: Z ", description:"Z position for builtin tool change", group:2, type:"integer", default_mm:40 },
   toolChangeZProbe: {title:"Change: Make Z Probe", description:"Z probe after tool change", group:2, type:"boolean", default_mm:true },
-  toolChangeDisableZStepper: {title:"Change: Disable Z stepper", description:"disable Z stepper when change a tool", group:2, type:"boolean", default_mm:false },
+  toolChangeDisableZStepper: {title:"Change: Disable Z stepper", description:"Disable Z stepper when change a tool", group:2, type:"boolean", default_mm:false },
 
-  probeOnStart: {title:"Probe: On job start", description:"Execute probe gcode on job start", group:3, type:"boolean", default_mm:true, presentation:"onoff" },
+  probeOnStart: {title:"Probe: On job start", description:"Execute probe gcode on job start", group:3, type:"boolean", default_mm:true },
   probeThickness: {title:"Probe: Plate thickness", description:"Plate thickness", group:3, type:"number", default_mm:0.8 },
-  probeUseHomeZ: {title:"Probe: Use Home Z", description:"Use G28 or G38 for probing ", group:3, type:"boolean", default_mm:true },
-  probeG38Target: {title:"Probe: G38 target ", description:"Probing up to Z position", group:3, type:"integer", default_mm:-10 },
+  probeUseHomeZ: {title:"Probe: Use Home Z", description:"Use G28 or G38 for probing", group:3, type:"boolean", default_mm:true },
+  probeG38Target: {title:"Probe: G38 target", description:"Probing up to Z position", group:3, type:"integer", default_mm:-10 },
   probeG38Speed: {title:"Probe: G38 speed", description:"Probing with speed", group:3, type:"integer", default_mm:30 },
     
+  cutterOnVaporize: {title:"Laser: On - Vaporize", description:"GCode command to turn on the laser/plasma cutter in vaporize mode", group:4, type:"string", default_mm:"M106 S255" },
   cutterOnThrough: {title:"Laser: On - Through", description:"GCode command to turn on the laser/plasma cutter in through mode", group:4, type:"string", default_mm:"M106 S200" },
   cutterOnEtch: {title:"Laser: On - Etch", description:"GCode command to turn on the laser/plasma cutter in etch mode", group:4, type:"string", default_mm:"M106 S100" },
-  cutterOnVaporize: {title:"Laser: On - Vaporize", description:"GCode command to turn on the laser/plasma cutter in vaporize mode", group:4, type:"string", default_mm:"M106 S255" },
   cutterOff: {title:"Laser: Off", description:"Gcode command to turn off the laser/plasma cutter", group:4, type:"string", default_mm:"M107" },
     
   gcodeStartFile: {title:"Extern: Start File", description:"File with custom Gcode for header/start (in nc folder)", group:5, type:"file", default_mm:"" },
@@ -392,11 +392,11 @@ function probeTool() {
     {
         writeln("G28 Z"); 
     } else {
-        writeln("G38.3 " + fOutput.format(properties.probeG38Speed) + " " + zOutput.format(properties.probeG38Target)); 
+        writeln("G38.3" + fOutput.format(properties.probeG38Speed) + zOutput.format(properties.probeG38Target)); 
     }
     writeln("G92" + zOutput.format(properties.probeThickness)); 
     if(properties.toolChangeZ != "") { // move up tool to safe height again after probing
-      writeln("G1" + zOutput.format(properties.toolChangeZ) + fOutput.format(properties.travelSpeedZ));
+      writeln("G0" + zOutput.format(properties.toolChangeZ) + fOutput.format(properties.travelSpeedZ));
     }  
     writeln("M0 Detach ZProbe");
     writeComment(" +------- Tool probed -------+ ");
@@ -423,8 +423,9 @@ function loadFile(_file) {
 }
 
 function onSpindleSpeed(spindleSpeed) {
-    writeComment(" Spindle Speed " + sOutput.format(spindleSpeed));    
-    writeln(sOutput.format(spindleSpeed));
+    var s = sOutput.format(spindleSpeed);	
+    writeComment(" Spindle Speed " + s);    
+    writeln(s);
 }
 
 function onCommand(command) {

@@ -18,30 +18,27 @@ Some design points:
 # User Properties
 
 
-## Travel speeds
+## Group 1: Job propertyes
 
 |Title|Description|Default|
 |---|---|---|
 Job: Travel Speed XY|High speed for travel movements X & Y (mm/min).|**2500 mm/min**|
 Job: Travel Speed Z|High speed for travel movements Z (mm/min).|**300 mm/min**|
+Job: Manual Spindle On/Off|Set it to true when the motor of your spindle is controlled by manual switch. So the preprocessor will issue additional pauses for TURN ON/TURN OFF the motor.|**true**|
+Job: Reset on start (G92)|Set origin when gcode start (G92 X0 Y0 Z0). Only apply if not using gcodeStartFile.|**true**|
+Job: Goto 0 at end|Go X0 Y0 at gcode end. Useful to find if your machine loss steeps or have any other mechanic issue (like loose pulleys). Also useful for repetitive jobs. Only apply if not using gcodeStopFile.|**true**|
 
-## Origins
-
-**setOriginOnStart**:
-  Set origin when gcode start (G92 X0 Y0 Z0). Only apply if not using gcodeStartFile.
-  Defaults to **true**.
-
-**goOriginOnFinish**:
-  Go X0 Y0 at gcode end. Useful to find if your machine loss steeps or have any other mechanic issue (like loose pulleys). Also useful for repetitive jobs. Only apply if not using gcodeStopFile.
-  Defaults to **true**.
-
-## Spindel
-
-**manualSpindlePowerControl**:
-  Set it to true when the motor of your spindle is controlled by manual switch. So the preprocessor will issue additional pauses for TURN ON/TURN OFF the motor.
-  Defaults to **true**.
   
-## Tool change
+## Group 2: Tool change
+
+|Title|Description|Default|
+|---|---|---|
+Change: Enabled|Enable tool change code (bultin tool change requires LCD display)|**true**|
+Change: X|X position for builtin tool change|**0**|
+Change: Y|Y position for builtin tool change|**0**|
+Change: Z|Z position for builtin tool change|**40**|
+Change: Make Z Probe|Z probe after tool change|**true**|
+Change: Disable Z stepper|Disable Z stepper when change a tool|**false**|
 
 **toolChangeEnabled**:
   Enable tool change gcode. If gcodeToolFile is not set, use builtin tool change gcode.

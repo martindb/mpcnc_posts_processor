@@ -4,7 +4,7 @@ MPCNC Fusion 360 CAM posts processor
 
 This is modified fork of https://github.com/martindb/mpcnc_posts_processor
 
-CAM posts processor for use with Fusion 360 and MPCNC (www.vicious1.com) with RAMPS/Marlin
+CAM posts processor for use with Fusion 360 and [MPCNC](https://www.v1engineering.com/assembly/) with RAMPS/Marlin
 
 Some design points:
 - Setup operation types: Milling, Water/Laser/Plasma
@@ -14,9 +14,9 @@ Some design points:
 - Tested with LCD display and SD card (built in tool change require printing from SD and LCD to restart)
 - Support for 3 different laser power using "cutting modes" (through, etch, vaporize)
 
+![screenshot](/screenshot.jpg "screenshot")
 
 # User Properties
-
 
 ## Group 1: Job propertyes
 
@@ -27,7 +27,6 @@ Job: Travel Speed Z|High speed for travel movements Z (mm/min).|**300 mm/min**|
 Job: Manual Spindle On/Off|Set it to true when the motor of your spindle is controlled by manual switch. So the preprocessor will issue additional pauses for TURN ON/TURN OFF the motor.|**true**|
 Job: Reset on start (G92)|Set origin when gcode start (G92 X0 Y0 Z0). Only apply if not using gcodeStartFile.|**true**|
 Job: Goto 0 at end|Go X0 Y0 at gcode end. Useful to find if your machine loss steeps or have any other mechanic issue (like loose pulleys). Also useful for repetitive jobs. Only apply if not using gcodeStopFile.|**true**|
-
   
 ## Group 2: Tool change
 
@@ -39,7 +38,6 @@ Change: Y|Y position for builtin tool change|**0**|
 Change: Z|Z position for builtin tool change|**40**|
 Change: Make Z Probe|Z probe after tool change|**true**|
 Change: Disable Z stepper|Disable Z stepper when change a tool|**false**|
-
   
 ## Group 3: Z Probe
 
@@ -323,7 +321,9 @@ M117 Job end
 
 [Marlin G-codes](http://marlinfw.org/meta/gcode/)
 
-[Post Processor Training Guide](https://cam.autodesk.com/posts/posts/guides/Post%20Processor%20Training%20Guide.pdf)
+[PostProcessor Class Reference](https://cam.autodesk.com/posts/reference/classPostProcessor.html#a703a15c8e783aace9156cabe74882013)
+
+[Post Processor Training Guide (PDF document)](https://cam.autodesk.com/posts/posts/guides/Post%20Processor%20Training%20Guide.pdf)
 
 [Enhancements to the post processor property definitions](https://forums.autodesk.com/t5/hsm-post-processor-forum/enhancements-to-the-post-processor-property-definitions/td-p/7325350)
 
@@ -332,3 +332,7 @@ M117 Job end
 [Library of exist post processors](https://cam.autodesk.com/hsmposts)
 
 [Post processors forum](https://forums.autodesk.com/t5/hsm-post-processor-forum/bd-p/218)
+
+[How to set up a 4/5 axis machine configuration](https://forums.autodesk.com/t5/hsm-post-processor-forum/how-to-set-up-a-4-5-axis-machine-configuration/td-p/6488176)
+
+[Beginners Guide to Editing Post Processors in Fusion 360! FF121 (Youtube video)](https://www.youtube.com/watch?v=5EodQIY25tU)

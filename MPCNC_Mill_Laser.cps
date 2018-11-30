@@ -1,8 +1,5 @@
 /*
 
-  $Revision: 42049 24365c4692af9ba58117d1ab4b45705fca82c227 $
-  $Date: 2018-07-30 11:44:37 $
-  
 MPCNC posts processor for milling and laser/plasma cutting.
 
 Some design points:

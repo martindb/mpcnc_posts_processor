@@ -318,3 +318,12 @@ M117 Job end
 ; *======== STOP end ==========* 
 
 ```
+
+# Resorces
+
+[Marlin G-codes](http://marlinfw.org/meta/gcode/)
+[Post Processor Training Guide](https://cam.autodesk.com/posts/posts/guides/Post%20Processor%20Training%20Guide.pdf)
+[Enhancements to the post processor property definitions](https://forums.autodesk.com/t5/hsm-post-processor-forum/enhancements-to-the-post-processor-property-definitions/td-p/7325350)
+[Dumper PostProcessor](https://cam.autodesk.com/hsmposts?p=dump)
+[Library of exist post processors](https://cam.autodesk.com/hsmposts)
+[Post processors forum](https://forums.autodesk.com/t5/hsm-post-processor-forum/bd-p/218)

@@ -47,7 +47,14 @@ properties = {
   cutterOnVaporize: "M106 S255",    // GCode command to turn on the laser/plasma cutter in vaporize mode
   cutterOnThrough: "M106 S200",     // GCode command to turn on the laser/plasma cutter in through mode
   cutterOnEtch: "M106 S100",        // GCode command to turn on the laser/plasma cutter in etch mode
-  cutterOff: "M107"                 // Gcode command to turn off the laser/plasma cutter
+  cutterOff: "M107",                 // Gcode command to turn off the laser/plasma cutter
+    
+  coolantAMode: 0, // Enable issuing g-codes for control Coolant channel A 
+  coolantAOn: "M42 P11 S255",        // GCode command to turn on Coolant channel A
+  coolantAOff: "M42 P11 S0",         // Gcode command to turn off Coolant channel A
+  coolantBMode: 0, // Use issuing g-codes for control Coolant channel B  
+  coolantBOn: "M42 P6 S255",         // GCode command to turn on Coolant channel B
+  coolantBOff: "M42 P6 S0"          // Gcode command to turn off Coolant channel B
 };
 
 propertyDefinitions = {
@@ -80,6 +87,33 @@ propertyDefinitions = {
   gcodeStopFile: {title:"Extern: Stop File", description:"File with custom Gcode for footer/end (in nc folder)", group:5, type:"file", default_mm:"" },
   gcodeToolFile: {title:"Extern: Tool File", description:"File with custom Gcode for tool change (in nc folder)", group:5, type:"file", default_mm:"" },
   gcodeProbeFile: {title:"Extern: Probe File", description:"File with custom Gcode for tool probe (in nc folder)", group:5, type:"file", default_mm:"" },
+    
+  coolantAMode:{title:"Coolant: A Mode", description:"Enable issuing g-codes for control Coolant channel A", group:6, type:"integer", default_mm: 0, values:[
+        {title:"off", id:0},
+        {title:"flood", id:1},
+        {title:"mist", id:2},
+        {title:"throughTool", id:3},
+        {title:"air", id:4},
+        {title:"airThroughTool", id:5},
+        {title:"suction", id:6},
+        {title:"floodMist", id:7},
+        {title:"floodThroughTool", id:8}
+    ]},
+  coolantAOn:{title:"Coolant: A On command", description:"GCode command to turn on Coolant channel A", group:6, type:"string", default_mm: "M42 P11 S255"}, 
+  coolantAOff:{title:"Coolant: A Off command", description:"Gcode command to turn off Coolant A", group:6, type:"string", default_mm:  "M42 P11 S0"},
+  coolantBMode:{title:"Coolant: B Mode", description:"Enable issuing g-codes for control Coolant channel B", group:6, type:"integer", default_mm: 0, values:[
+        {title:"off", id:0},
+        {title:"flood", id:1},
+        {title:"mist", id:2},
+        {title:"throughTool", id:3},
+        {title:"air", id:4},
+        {title:"airThroughTool", id:5},
+        {title:"suction", id:6},
+        {title:"floodMist", id:7},
+        {title:"floodThroughTool", id:8}
+    ]},            
+  coolantBOn:{title:"Coolant: B On command", description:"GCode command to turn on Coolant channel B", group:6, type:"string", default_mm: "M42 P6 S255"}, 
+  coolantBOff:{title:"Coolant: B Off command", description:"Gcode command to turn off Coolant channel B", group:6, type:"string", default_mm:  "M42 P6 S0"},
 };
 
 
@@ -131,6 +165,7 @@ function onClose() {
   writeln("M400");
 
   if(properties.gcodeStopFile == "") {
+    onCommand(COMMAND_COOLANT_OFF);
     onCommand(COMMAND_STOP_SPINDLE);
     if(properties.goOriginOnFinish) {
          writeln("G0 X0 Y0" + fOutput.format(properties.travelSpeedXY)); // Go to XY origin
@@ -161,12 +196,13 @@ function onSection() {
       loadFile(properties.gcodeStartFile);
     }
     if(properties.probeOnStart && tool.number != 0) {
-      onCommand(COMMAND_TOOL_MEASURE);
-    }
-    onCommand(COMMAND_START_SPINDLE);
+        onCommand(COMMAND_TOOL_MEASURE);
+      }
+      onCommand(COMMAND_START_SPINDLE);
     writeComment(" *======== START end ==========* ");
   }
 
+    
   // Tool change
   if(properties.toolChangeEnabled && !isFirstSection() && tool.number != getPreviousSection().getTool().number) {
     toolChange();
@@ -175,7 +211,7 @@ function onSection() {
   // Machining type
   if(currentSection.type == TYPE_MILLING) {
     // Specific milling code
-    writeComment(sectionComment + " - Milling - Tool: " + tool.number + " - " + tool.comment + getToolTypeName(tool.type));
+    writeComment(sectionComment + " - Milling - Tool: " + tool.number + " - " + tool.comment + " " + getToolTypeName(tool.type));
   }
 
   if(currentSection.type == TYPE_JET) {
@@ -206,7 +242,9 @@ function onSection() {
   // Display section name in LCD
   writeln("M400");
   writeln("M117 " + sectionComment);
-
+    
+  // set coolant after we have positioned at Z
+  onCommand(COMMAND_COOLANT_ON);
   return;
 }
 
@@ -351,6 +389,7 @@ function toolChange() {
     // Builtin tool change gcode
     writeComment(" *======== CHANGE TOOL begin ==========* ");
 
+    onCommand(COMMAND_COOLANT_OFF);  
     // Beep
     writeln("M400"); // Wait movement buffer it's empty
     writeln("M300 S400 P2000");
@@ -422,6 +461,36 @@ function loadFile(_file) {
   }
 }
 
+var currentCoolantMode = 0;
+
+function setCoolant(coolant) {
+    if(currentCoolantMode == coolant)
+    {
+        return;
+    }
+    if(properties.coolantAMode != 0 && properties.coolantAOn != "" && properties.coolantAOff != "")
+    {
+        if(currentCoolantMode == properties.coolantAMode)
+        {
+            writeln(properties.coolantAOff);
+        } else if (coolant == properties.coolantAMode)
+        {
+            writeln(properties.coolantAOn);
+        }
+    }
+    if(properties.coolantBMode != 0 && properties.coolantBOn != "" && properties.coolantBOff != "")
+    {
+        if(currentCoolantMode == properties.coolantBMode)
+        {
+            writeln(properties.coolantBOff);
+        } else if (coolant == properties.coolantBMode)
+        {
+            writeln(properties.coolantBOn);
+        }
+    }
+    currentCoolantMode = coolant;
+}
+
 function onSpindleSpeed(spindleSpeed) {
     var s = sOutput.format(spindleSpeed);	
     writeComment(" Spindle Speed " + s);    
@@ -465,6 +534,13 @@ function onCommand(command) {
         } else {
             writeln("M5");
         }
+        return;
+          
+  case COMMAND_COOLANT_ON:
+        setCoolant(tool.coolant);  
+        return;
+  case COMMAND_COOLANT_OFF:
+        setCoolant(0);  //COOLANT_DISABLED
         return;
   case COMMAND_LOCK_MULTI_AXIS:
           return;

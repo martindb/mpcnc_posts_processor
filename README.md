@@ -67,6 +67,19 @@ Extern: Stop File|File with custom Gcode for footer/end (in nc folder)||
 Extern: Tool File|File with custom Gcode for tool change (in nc folder)||
 Extern: Probe File|File with custom Gcode for tool probe (in nc folder)||
 
+
+## Group 5: Manage coolant control pins
+
+|Title|Description|Default|Values|
+|---|---|---|---|
+Coolant: A Mode|Enable issuing g-codes for control Coolant channel A|**0**|off=0; flood=1; mist=2; throughTool=3; air=4; airThroughTool=5; suction=6; floodMist=7; floodThroughTool=8|
+Coolant: A On command|GCode command to turn on Coolant channel A|**M42 P11 S255**||
+Coolant: A Off command|Gcode command to turn off Coolant A|**M42 P11 S0"**||
+Coolant: B Mode|Enable issuing g-codes for control Coolant channel B|**0**|off=0; flood=1; mist=2; throughTool=3; air=4; airThroughTool=5; suction=6; floodMist=7; floodThroughTool=8|
+Coolant: B On command|GCode command to turn on Coolant channel B|**M42 P6 S255"**||
+Coolant: B Off command|Gcode command to turn off Coolant channel B|**M42 P6 S0"**||
+
+
 # Sample of issued code blocks
 
 ## Gcode of milling with manually control spindel
@@ -247,6 +260,123 @@ M117 Job end
 ; *======== STOP end ==========* 
 ```
 
+## Gcode of milling with spindel controlled by M3/M4/M5 with usin Coolants (both A and B channels)
+
+```G-code
+;Fusion 360 CAM 2.0.5044
+; Posts processor: MPCNC_Mill_Laser.cps
+; Gcode generated: Friday, November 30, 2018 4:32:36 PM GMT
+; Document: cam_testpp v3
+; Setup: Setup1
+; *======== START begin ==========* 
+G90
+G21
+M84 S0
+G92 X0 Y0 Z0
+; COMMAND_TOOL_MEASURE
+; +------- Probe tool -------+ 
+M0 Attach ZProbe
+G28 Z
+G92 Z0.8
+G0 Z40 F300
+M0 Detach ZProbe
+; +------- Tool probed -------+ 
+; COMMAND_START_SPINDLE
+; COMMAND_SPINDLE_CLOCKWISE
+M3 S21000
+; *======== START end ==========* 
+;2D Contour1 - Milling - Tool: 1 - 1/8inch flat end mill
+; X Min: 2.588 - X Max: 49.412
+; Y Min: 2.588 - Y Max: 49.412
+; Z Min: -1 - Z Max: 15
+M400
+M117 2D Contour1
+; COMMAND_COOLANT_ON
+M42 P11 S255
+G0 Z15
+G0 X49.412 Y26 F2500
+G0 Z5 F300
+G1 Z1 F100
+G1 Z-1
+G1 Y49.412 F300
+G1 X2.588
+G1 Y2.588
+G1 X49.412
+G1 Y26
+G0 Z15
+
+;2D Contour2 - Milling - Tool: 1 - 1/8inch flat end mill
+; X Min: 9.587 - X Max: 42.412
+; Y Min: 9.587 - Y Max: 42.412
+; Z Min: -1 - Z Max: 15
+M400
+M117 2D Contour2
+; COMMAND_COOLANT_ON
+M42 P11 S0
+M42 P6 S255
+G0 Z15 F300
+G0 X42.412 Y26 F2500
+G0 Z5 F300
+G1 Z1 F100
+G1 Z-1
+G1 Y42.412 F300
+G1 X9.587
+G1 Y9.587
+G1 X42.412
+G1 Y26
+G0 Z15
+
+; *======== CHANGE TOOL begin ==========* 
+; COMMAND_COOLANT_OFF
+M42 P6 S0
+M400
+M300 S400 P2000
+G0 Z40 F300
+G0 X0 Y0 F2500
+; COMMAND_STOP_SPINDLE
+M5
+M0 Put tool 2 - 1.5mm
+; COMMAND_TOOL_MEASURE
+; +------- Probe tool -------+ 
+M0 Attach ZProbe
+G28 Z
+G92 Z0.8
+G0 Z40 F300
+M0 Detach ZProbe
+; +------- Tool probed -------+ 
+; COMMAND_START_SPINDLE
+; COMMAND_SPINDLE_CLOCKWISE
+M3 S21000
+; *======== CHANGE TOOL end ==========* 
+;Trace1 - Milling - Tool: 2 - 1.5mm flat end mill
+; X Min: 16 - X Max: 36
+; Y Min: 16 - Y Max: 36
+; Z Min: -1 - Z Max: 15
+M400
+M117 Trace1
+; COMMAND_COOLANT_ON
+G0 Z15
+G0 X36 Y36 F2500
+G0 Z4 F300
+G1 Z-1 F300
+G1 Y16
+G1 X16
+G1 Y36
+G1 X36
+G1 Z4
+G0 Z15
+
+; *======== STOP begin ==========* 
+M400
+; COMMAND_COOLANT_OFF
+; COMMAND_STOP_SPINDLE
+M5
+G0 X0 Y0 F2500
+M117 Job end
+; *======== STOP end ==========* 
+```
+
+
 ## Gcode of laser cutting
 
 ```G-code
@@ -321,7 +451,7 @@ M117 Job end
 
 [Marlin G-codes](http://marlinfw.org/meta/gcode/)
 
-[PostProcessor Class Reference](https://cam.autodesk.com/posts/reference/classPostProcessor.html#a703a15c8e783aace9156cabe74882013)
+[PostProcessor Class Reference](https://cam.autodesk.com/posts/reference/classPostProcessor.html)
 
 [Post Processor Training Guide (PDF document)](https://cam.autodesk.com/posts/posts/guides/Post%20Processor%20Training%20Guide.pdf)
 

@@ -32,7 +32,7 @@ properties = {
 
   probeOnStart: true,               // Execute probe gcode to align tool
   probeThickness: 0.8,              // plate thickness
-  probeUseHomeZ: true,               // use G28 or G38 for probing 
+  probeUseHomeZ: true,              // use G28 or G38 for probing 
   probeG38Target: -10,              // probing up to pos 
   probeG38Speed: 30,                // probing with speed 
 
@@ -55,38 +55,112 @@ properties = {
 };
 
 propertyDefinitions = {
-  travelSpeedXY: { title: "Job: Travel speed X/Y", description: "High speed for travel movements X & Y (mm/min)", group: 1, type: "integer", default_mm: 2500 },
-  travelSpeedZ: { title: "Job: Travel Speed Z", description: "High speed for travel movements z (mm/min)", group: 1, type: "integer", default_mm: 300 },
+  travelSpeedXY: {
+    title: "Job: Travel speed X/Y", description: "High speed for travel movements X & Y (mm/min; in/min)", group: 1,
+    type: "number", default_mm: 2500, default_in: 100
+  },
+  travelSpeedZ: {
+    title: "Job: Travel Speed Z", description: "High speed for travel movements z (mm/min; in/min)", group: 1,
+    type: "number", default_mm: 300, default_in: 12
+  },
 
-  manualSpindlePowerControl: { title: "Job: Manual Spindle On/Off", description: "Set Yes when your spindle motor is controlled by manual switch", group: 1, type: "boolean", default_mm: true },
-  setOriginOnStart: { title: "Job: Reset on start (G92)", description: "Set origin when gcode start (G92)", group: 1, type: "boolean", default_mm: true },
-  goOriginOnFinish: { title: "Job: Goto 0 at end", description: "Go X0 Y0 at gcode end", group: 1, type: "boolean", default_mm: true },
+  manualSpindlePowerControl: {
+    title: "Job: Manual Spindle On/Off", description: "Set Yes when your spindle motor is controlled by manual switch", group: 1,
+    type: "boolean", default_mm: true, default_in: true
+  },
+  setOriginOnStart: {
+    title: "Job: Reset on start (G92)", description: "Set origin when gcode start (G92)", group: 1,
+    type: "boolean", default_mm: true, default_in: true
+  },
+  goOriginOnFinish: {
+    title: "Job: Goto 0 at end", description: "Go X0 Y0 at gcode end", group: 1,
+    type: "boolean", default_mm: true, default_in: true
+  },
 
-  toolChangeEnabled: { title: "Change: Enabled", description: "Enable tool change code (bultin tool change requires LCD display)", group: 2, type: "boolean", default_mm: true },
-  toolChangeX: { title: "Change: X", description: "X position for builtin tool change", group: 2, type: "integer", default_mm: 0 },
-  toolChangeY: { title: "Change: Y", description: "Y position for builtin tool change", group: 2, type: "integer", default_mm: 0 },
-  toolChangeZ: { title: "Change: Z ", description: "Z position for builtin tool change", group: 2, type: "integer", default_mm: 40 },
-  toolChangeZProbe: { title: "Change: Make Z Probe", description: "Z probe after tool change", group: 2, type: "boolean", default_mm: true },
-  toolChangeDisableZStepper: { title: "Change: Disable Z stepper", description: "Disable Z stepper when change a tool", group: 2, type: "boolean", default_mm: false },
+  toolChangeEnabled: {
+    title: "Change: Enabled", description: "Enable tool change code (bultin tool change requires LCD display)", group: 2,
+    type: "boolean", default_mm: true, default_in: true
+  },
+  toolChangeX: {
+    title: "Change: X", description: "X position for builtin tool change", group: 2,
+    type: "number", default_mm: 0, default_in: 0
+  },
+  toolChangeY: {
+    title: "Change: Y", description: "Y position for builtin tool change", group: 2,
+    type: "number", default_mm: 0, default_in: 0
+  },
+  toolChangeZ: {
+    title: "Change: Z ", description: "Z position for builtin tool change", group: 2,
+    type: "number", default_mm: 40, default_in: 1.6
+  },
+  toolChangeZProbe: {
+    title: "Change: Make Z Probe", description: "Z probe after tool change", group: 2,
+    type: "boolean", default_mm: true, default_in: true
+  },
+  toolChangeDisableZStepper: {
+    title: "Change: Disable Z stepper", description: "Disable Z stepper when change a tool", group: 2,
+    type: "boolean", default_mm: false, default_in: false
+  },
 
-  probeOnStart: { title: "Probe: On job start", description: "Execute probe gcode on job start", group: 3, type: "boolean", default_mm: true },
-  probeThickness: { title: "Probe: Plate thickness", description: "Plate thickness", group: 3, type: "number", default_mm: 0.8 },
-  probeUseHomeZ: { title: "Probe: Use Home Z", description: "Use G28 or G38 for probing", group: 3, type: "boolean", default_mm: true },
-  probeG38Target: { title: "Probe: G38 target", description: "Probing up to Z position", group: 3, type: "integer", default_mm: -10 },
-  probeG38Speed: { title: "Probe: G38 speed", description: "Probing with speed", group: 3, type: "integer", default_mm: 30 },
+  probeOnStart: {
+    title: "Probe: On job start", description: "Execute probe gcode on job start", group: 3,
+    type: "boolean", default_mm: true, default_in: true
+  },
+  probeThickness: {
+    title: "Probe: Plate thickness", description: "Plate thickness", group: 3,
+    type: "number", default_mm: 0.8, default_in: 0.032
+  },
+  probeUseHomeZ: {
+    title: "Probe: Use Home Z", description: "Use G28 or G38 for probing", group: 3,
+    type: "boolean", default_mm: true, default_in: true
+  },
+  probeG38Target: {
+    title: "Probe: G38 target", description: "Probing up to Z position", group: 3,
+    type: "number", default_mm: -10, default_in: -0.5
+  },
+  probeG38Speed: {
+    title: "Probe: G38 speed", description: "Probing with speed (mm/min; in/min)", group: 3,
+    type: "number", default_mm: 30, default_in: 1.2
+  },
 
-  cutterOnVaporize: { title: "Laser: On - Vaporize", description: "GCode command to turn on the laser/plasma cutter in vaporize mode", group: 4, type: "string", default_mm: "M106 S255" },
-  cutterOnThrough: { title: "Laser: On - Through", description: "GCode command to turn on the laser/plasma cutter in through mode", group: 4, type: "string", default_mm: "M106 S200" },
-  cutterOnEtch: { title: "Laser: On - Etch", description: "GCode command to turn on the laser/plasma cutter in etch mode", group: 4, type: "string", default_mm: "M106 S100" },
-  cutterOff: { title: "Laser: Off", description: "Gcode command to turn off the laser/plasma cutter", group: 4, type: "string", default_mm: "M107" },
+  cutterOnVaporize: {
+    title: "Laser: On - Vaporize", description: "GCode command to turn on the laser/plasma cutter in vaporize mode", group: 4,
+    type: "string", default_mm: "M106 S255", default_in: "M106 S255"
+  },
+  cutterOnThrough: {
+    title: "Laser: On - Through", description: "GCode command to turn on the laser/plasma cutter in through mode", group: 4,
+    type: "string", default_mm: "M106 S200", default_in: "M106 S200"
+  },
+  cutterOnEtch: {
+    title: "Laser: On - Etch", description: "GCode command to turn on the laser/plasma cutter in etch mode", group: 4,
+    type: "string", default_mm: "M106 S100", default_in: "M106 S100"
+  },
+  cutterOff: {
+    title: "Laser: Off", description: "Gcode command to turn off the laser/plasma cutter", group: 4,
+    type: "string", default_mm: "M107", default_in: "M107"
+  },
 
-  gcodeStartFile: { title: "Extern: Start File", description: "File with custom Gcode for header/start (in nc folder)", group: 5, type: "file", default_mm: "" },
-  gcodeStopFile: { title: "Extern: Stop File", description: "File with custom Gcode for footer/end (in nc folder)", group: 5, type: "file", default_mm: "" },
-  gcodeToolFile: { title: "Extern: Tool File", description: "File with custom Gcode for tool change (in nc folder)", group: 5, type: "file", default_mm: "" },
-  gcodeProbeFile: { title: "Extern: Probe File", description: "File with custom Gcode for tool probe (in nc folder)", group: 5, type: "file", default_mm: "" },
+  gcodeStartFile: {
+    title: "Extern: Start File", description: "File with custom Gcode for header/start (in nc folder)", group: 5,
+    type: "file", default_mm: "", default_in: ""
+  },
+  gcodeStopFile: {
+    title: "Extern: Stop File", description: "File with custom Gcode for footer/end (in nc folder)", group: 5,
+    type: "file", default_mm: "", default_in: ""
+  },
+  gcodeToolFile: {
+    title: "Extern: Tool File", description: "File with custom Gcode for tool change (in nc folder)", group: 5,
+    type: "file", default_mm: "", default_in: ""
+  },
+  gcodeProbeFile: {
+    title: "Extern: Probe File", description: "File with custom Gcode for tool probe (in nc folder)", group: 5,
+    type: "file", default_mm: "", default_in: ""
+  },
 
   coolantAMode: {
-    title: "Coolant: A Mode", description: "Enable issuing g-codes for control Coolant channel A", group: 6, type: "integer", default_mm: 0, values: [
+    title: "Coolant: A Mode", description: "Enable issuing g-codes for control Coolant channel A", group: 6, type: "integer",
+    default_mm: 0, default_in: 0,
+    values: [
       { title: "off", id: 0 },
       { title: "flood", id: 1 },
       { title: "mist", id: 2 },
@@ -99,9 +173,14 @@ propertyDefinitions = {
     ]
   },
   coolantAOn: { title: "Coolant: A On command", description: "GCode command to turn on Coolant channel A", group: 6, type: "string", default_mm: "M42 P11 S255" },
-  coolantAOff: { title: "Coolant: A Off command", description: "Gcode command to turn off Coolant A", group: 6, type: "string", default_mm: "M42 P11 S0" },
+  coolantAOff: {
+    title: "Coolant: A Off command", description: "Gcode command to turn off Coolant A", group: 6, type: "string",
+    default_mm: "M42 P11 S0", default_in: "M42 P11 S0"
+  },
   coolantBMode: {
-    title: "Coolant: B Mode", description: "Enable issuing g-codes for control Coolant channel B", group: 6, type: "integer", default_mm: 0, values: [
+    title: "Coolant: B Mode", description: "Enable issuing g-codes for control Coolant channel B", group: 6, type: "integer",
+    default_mm: 0, default_in: 0,
+    values: [
       { title: "off", id: 0 },
       { title: "flood", id: 1 },
       { title: "mist", id: 2 },
@@ -113,8 +192,14 @@ propertyDefinitions = {
       { title: "floodThroughTool", id: 8 }
     ]
   },
-  coolantBOn: { title: "Coolant: B On command", description: "GCode command to turn on Coolant channel B", group: 6, type: "string", default_mm: "M42 P6 S255" },
-  coolantBOff: { title: "Coolant: B Off command", description: "Gcode command to turn off Coolant channel B", group: 6, type: "string", default_mm: "M42 P6 S0" },
+  coolantBOn: {
+    title: "Coolant: B On command", description: "GCode command to turn on Coolant channel B", group: 6, type: "string",
+    default_mm: "M42 P6 S255", default_in: "M42 P6 S255"
+  },
+  coolantBOff: {
+    title: "Coolant: B Off command", description: "Gcode command to turn off Coolant channel B", group: 6, type: "string",
+    default_mm: "M42 P6 S0", default_in: "M42 P6 S0"
+  },
 };
 
 
@@ -126,8 +211,8 @@ capabilities = CAPABILITY_MILLING | CAPABILITY_JET;
 description = "MPCNC Marlin 2.0 Milling/Laser";
 
 // Formats
-var xyzFormat = createFormat({ decimals: 3 });
-var feedFormat = createFormat({ decimals: 0 });
+var xyzFormat = createFormat({ decimals: (unit == MM ? 3 : 4) });
+var feedFormat = createFormat({ decimals: (unit == MM ? 0 : 2) });
 var speedFormat = createFormat({ decimals: 0 });
 
 // Linear outputs
@@ -165,7 +250,7 @@ function onClose() {
     onCommand(COMMAND_COOLANT_OFF);
     onCommand(COMMAND_STOP_SPINDLE);
     if (properties.goOriginOnFinish) {
-      writeln("G0 X0 Y0" + fOutput.format(properties.travelSpeedXY)); // Go to XY origin
+      writeln("G0 X0 Y0" + fOutput.format(adaptSpatial(properties.travelSpeedXY))); // Go to XY origin
       //onRapid(0,0,position.z);
     }
     writeln("M117 Job end");
@@ -187,7 +272,14 @@ function onSection() {
     writeComment(" *======== START begin ==========* ");
     if (properties.gcodeStartFile == "") {
       writeln("G90"); // Set to Absolute Positioning
-      writeln("G21"); // Set Units to Millimeters
+      switch (unit) {
+        case IN:
+          writeln("G20"); // Set Units to Inches
+          break;
+        case MM:
+          writeln("G21"); // Set Units to Millimeters
+          break;
+      }
       writeln("M84 S0"); // Disable steppers timeout
       if (properties.setOriginOnStart) {
         writeln("G92 X0 Y0 Z0"); // Set origin to initial position
@@ -394,12 +486,12 @@ function rapidMovements(_x, _y, _z) {
   var z = zOutput.format(_z);
 
   if (z) {
-    f = fOutput.format(properties.travelSpeedZ);
+    f = fOutput.format(adaptSpatial(properties.travelSpeedZ));
     fOutput.reset();
     writeln("G0" + z + f);
   }
   if (x || y) {
-    f = fOutput.format(properties.travelSpeedXY);
+    f = fOutput.format(adaptSpatial(properties.travelSpeedXY));
     fOutput.reset();
     writeln("G0" + x + y + f);
   }
@@ -454,7 +546,7 @@ function toolChange() {
     writeln("M300 S400 P2000");
 
     // Go to tool change position
-    onRapid(properties.toolChangeX, properties.toolChangeY, properties.toolChangeZ);
+    onRapid(adaptSpatial(properties.toolChangeX), adaptSpatial(properties.toolChangeY), adaptSpatial(properties.toolChangeZ));
 
     onCommand(COMMAND_STOP_SPINDLE);
 
@@ -488,11 +580,11 @@ function probeTool() {
     if (properties.probeUseHomeZ) {
       writeln("G28 Z");
     } else {
-      writeln("G38.3" + fOutput.format(properties.probeG38Speed) + zOutput.format(properties.probeG38Target));
+      writeln("G38.3" + fOutput.format(adaptSpatial(properties.probeG38Speed)) + zOutput.format(adaptSpatial(properties.probeG38Target)));
     }
-    writeln("G92" + zOutput.format(properties.probeThickness));
+    writeln("G92" + zOutput.format(adaptSpatial(properties.probeThickness)));
     if (properties.toolChangeZ != "") { // move up tool to safe height again after probing
-      writeln("G0" + zOutput.format(properties.toolChangeZ) + fOutput.format(properties.travelSpeedZ));
+      writeln("G0" + zOutput.format(adaptSpatial(properties.toolChangeZ)) + fOutput.format(adaptSpatial(properties.travelSpeedZ)));
     }
     writeln("M0 Detach ZProbe");
     writeComment(" +------- Tool probed -------+ ");
@@ -542,3 +634,6 @@ function setCoolant(coolant) {
   currentCoolantMode = coolant;
 }
 
+function adaptSpatial(_v) {
+  return (_v / (unit == IN ? 25.4 : 1));
+}

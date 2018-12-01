@@ -63,11 +63,11 @@ properties = {
 propertyDefinitions = {
   travelSpeedXY: {
     title: "Job: Travel speed X/Y", description: "High speed for travel movements X & Y (mm/min; in/min)", group: 1,
-    type: "number", default_mm: 2500, default_in: 100
+    type: "spatial", default_mm: 2500, default_in: 100
   },
   travelSpeedZ: {
     title: "Job: Travel Speed Z", description: "High speed for travel movements z (mm/min; in/min)", group: 1,
-    type: "number", default_mm: 300, default_in: 12
+    type: "spatial", default_mm: 300, default_in: 12
   },
 
   manualSpindlePowerControl: {

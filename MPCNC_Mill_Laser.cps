@@ -51,7 +51,13 @@ properties = {
   coolantAOff: "M42 P11 S0",         // Gcode command to turn off Coolant channel A
   coolantBMode: 0, // Use issuing g-codes for control Coolant channel B  
   coolantBOn: "M42 P6 S255",         // GCode command to turn on Coolant channel B
-  coolantBOff: "M42 P6 S0"          // Gcode command to turn off Coolant channel B
+  coolantBOff: "M42 P6 S0",          // Gcode command to turn off Coolant channel B
+
+  commentWriteTools: true,
+  commentActivities: true,
+  commentSections: true,
+  commentCommands: true,
+  commentMovements: true,
 };
 
 propertyDefinitions = {
@@ -200,8 +206,29 @@ propertyDefinitions = {
     title: "Coolant: B Off command", description: "Gcode command to turn off Coolant channel B", group: 6, type: "string",
     default_mm: "M42 P6 S0", default_in: "M42 P6 S0"
   },
-};
 
+  commentWriteTools: {
+    title: "Comment: Write Tools", description: "Write table of used tools in job header", group: 7,
+    type: "boolean", default_mm: true, default_in: true
+  },
+  commentActivities: {
+    title: "Comment: Activities", description: "Write comments which somehow helps to understand current piece of g-code", group: 7,
+    type: "boolean", default_mm: true, default_in: true
+  },
+  commentSections: {
+    title: "Comment: Sections", description: "Write header of every section", group: 7,
+    type: "boolean", default_mm: true, default_in: true
+  },
+  commentCommands: {
+    title: "Comment: Trace Commands", description: "Write stringified commands called by CAM", group: 7,
+    type: "boolean", default_mm: true, default_in: true
+  },
+  commentMovements: {
+    title: "Comment: Trace Movements", description: "Write stringified movements called by CAM", group: 7,
+    type: "boolean", default_mm: true, default_in: true
+  },
+
+};
 
 // Internal properties
 certificationLevel = 2;
@@ -214,6 +241,7 @@ description = "MPCNC Marlin 2.0 Milling/Laser";
 var xyzFormat = createFormat({ decimals: (unit == MM ? 3 : 4) });
 var feedFormat = createFormat({ decimals: (unit == MM ? 0 : 2) });
 var speedFormat = createFormat({ decimals: 0 });
+var toolFormat = createFormat({ decimals: 0 });
 
 // Linear outputs
 var xOutput = createVariable({ prefix: " X" }, xyzFormat);
@@ -244,17 +272,21 @@ function onOpen() {
 
 // Called at end of gcode file
 function onClose() {
-  writeComment(" *======== STOP begin ==========* ");
+  if (properties.commentActivities) {
+    writeComment(" *======== STOP begin ==========* ");
+  }
   writeln("M400");
   if (properties.gcodeStopFile == "") {
     onCommand(COMMAND_COOLANT_OFF);
     onCommand(COMMAND_STOP_SPINDLE);
     if (properties.goOriginOnFinish) {
-      writeln("G0 X0 Y0" + fOutput.format(adaptSpatial(properties.travelSpeedXY))); // Go to XY origin
+      writeln("G0 X0 Y0" + fOutput.format(propertyMmToUnit(properties.travelSpeedXY))); // Go to XY origin
       //onRapid(0,0,position.z);
     }
     writeln("M117 Job end");
-    writeComment(" *======== STOP end ==========* ");
+    if (properties.commentActivities) {
+      writeComment(" *======== STOP end ==========* ");
+    }
   } else {
     loadFile(properties.gcodeStopFile);
   }
@@ -269,29 +301,7 @@ function onSection() {
 
   // Write Start gcode of the documment (after the "onParameters" with the global info)
   if (isFirstSection()) {
-    writeComment(" *======== START begin ==========* ");
-    if (properties.gcodeStartFile == "") {
-      writeln("G90"); // Set to Absolute Positioning
-      switch (unit) {
-        case IN:
-          writeln("G20"); // Set Units to Inches
-          break;
-        case MM:
-          writeln("G21"); // Set Units to Millimeters
-          break;
-      }
-      writeln("M84 S0"); // Disable steppers timeout
-      if (properties.setOriginOnStart) {
-        writeln("G92 X0 Y0 Z0"); // Set origin to initial position
-      }
-    } else {
-      loadFile(properties.gcodeStartFile);
-    }
-    if (properties.probeOnStart && tool.number != 0) {
-      onCommand(COMMAND_TOOL_MEASURE);
-    }
-    onCommand(COMMAND_START_SPINDLE);
-    writeComment(" *======== START end ==========* ");
+    writeFirstSection();
   }
 
   // Tool change
@@ -299,36 +309,38 @@ function onSection() {
     toolChange();
   }
 
-  // Machining type
-  if (currentSection.type == TYPE_MILLING) {
-    // Specific milling code
-    writeComment(sectionComment + " - Milling - Tool: " + tool.number + " - " + tool.comment + " " + getToolTypeName(tool.type));
-  }
-
-  if (currentSection.type == TYPE_JET) {
-    // Cutter mode used for different cutting power in PWM laser
-    switch (currentSection.jetMode) {
-      case JET_MODE_THROUGH:
-        cutterOnGCodeOfCurrentMode = properties.cutterOnThrough;
-        break;
-      case JET_MODE_ETCHING:
-        cutterOnGCodeOfCurrentMode = properties.cutterOnEtch;
-        break;
-      case JET_MODE_VAPORIZE:
-        cutterOnGCodeOfCurrentMode = properties.cutterOnVaporize;
-        break;
-      default:
-        error("Cutting mode is not supported.");
+  if (properties.commentSections) {
+    // Machining type
+    if (currentSection.type == TYPE_MILLING) {
+      // Specific milling code
+      writeComment(sectionComment + " - Milling - Tool: " + tool.number + " - " + tool.comment + " " + getToolTypeName(tool.type));
     }
-    writeComment(sectionComment + " - Laser/Plasma - Cutting mode: " + getParameter("operation:cuttingMode"));
-  }
 
-  // Print min/max boundaries for each section
-  vectorX = new Vector(1, 0, 0);
-  vectorY = new Vector(0, 1, 0);
-  writeComment(" X Min: " + xyzFormat.format(currentSection.getGlobalRange(vectorX).getMinimum()) + " - X Max: " + xyzFormat.format(currentSection.getGlobalRange(vectorX).getMaximum()));
-  writeComment(" Y Min: " + xyzFormat.format(currentSection.getGlobalRange(vectorY).getMinimum()) + " - Y Max: " + xyzFormat.format(currentSection.getGlobalRange(vectorY).getMaximum()));
-  writeComment(" Z Min: " + xyzFormat.format(currentSection.getGlobalZRange().getMinimum()) + " - Z Max: " + xyzFormat.format(currentSection.getGlobalZRange().getMaximum()));
+    if (currentSection.type == TYPE_JET) {
+      // Cutter mode used for different cutting power in PWM laser
+      switch (currentSection.jetMode) {
+        case JET_MODE_THROUGH:
+          cutterOnGCodeOfCurrentMode = properties.cutterOnThrough;
+          break;
+        case JET_MODE_ETCHING:
+          cutterOnGCodeOfCurrentMode = properties.cutterOnEtch;
+          break;
+        case JET_MODE_VAPORIZE:
+          cutterOnGCodeOfCurrentMode = properties.cutterOnVaporize;
+          break;
+        default:
+          error("Cutting mode is not supported.");
+      }
+      writeComment(sectionComment + " - Laser/Plasma - Cutting mode: " + getParameter("operation:cuttingMode"));
+    }
+
+    // Print min/max boundaries for each section
+    vectorX = new Vector(1, 0, 0);
+    vectorY = new Vector(0, 1, 0);
+    writeComment(" X Min: " + xyzFormat.format(currentSection.getGlobalRange(vectorX).getMinimum()) + " - X Max: " + xyzFormat.format(currentSection.getGlobalRange(vectorX).getMaximum()));
+    writeComment(" Y Min: " + xyzFormat.format(currentSection.getGlobalRange(vectorY).getMinimum()) + " - Y Max: " + xyzFormat.format(currentSection.getGlobalRange(vectorY).getMaximum()));
+    writeComment(" Z Min: " + xyzFormat.format(currentSection.getGlobalZRange().getMinimum()) + " - Z Max: " + xyzFormat.format(currentSection.getGlobalZRange().getMaximum()));
+  }
 
   // Display section name in LCD
   writeln("M400");
@@ -347,6 +359,10 @@ function onSectionEnd() {
   fOutput.reset();
   writeln("");
   return;
+}
+
+function onComment(message) {
+  writeComment(message);
 }
 
 // Rapid movements
@@ -372,10 +388,14 @@ var powerState = false;
 function onPower(power) {
   if (power != powerState) {
     if (power) {
-      writeComment(" LASER Power ON");
+      if (properties.commentActivities) {
+        writeComment(" LASER Power ON");
+      }
       writeln(cutterOnGCodeOfCurrentMode);
     } else {
-      writeComment(" LASER Power OFF");
+      if (properties.commentActivities) {
+        writeComment(" LASER Power OFF");
+      }
       writeln(properties.cutterOff);
     }
     powerState = power;
@@ -385,7 +405,9 @@ function onPower(power) {
 
 // Called on Dwell Manual NC invocation
 function onDwell(seconds) {
-  writeComment(" Dwell");
+  if (properties.commentActivities) {
+    writeComment(" Dwell");
+  }
   writeln("G4 S" + seconds);
   writeln("");
   return;
@@ -413,15 +435,77 @@ function onParameter(name, value) {
   return;
 }
 
+function onMovement(movement) {
+  if (properties.commentMovements) {
+    var jet = tool.isJetTool && tool.isJetTool();
+    var id;
+    switch (movement) {
+      case MOVEMENT_RAPID:
+        id = "MOVEMENT_RAPID";
+        break;
+      case MOVEMENT_LEAD_IN:
+        id = "MOVEMENT_LEAD_IN";
+        break;
+      case MOVEMENT_CUTTING:
+        id = "MOVEMENT_CUTTING";
+        break;
+      case MOVEMENT_LEAD_OUT:
+        id = "MOVEMENT_LEAD_OUT";
+        break;
+      case MOVEMENT_LINK_TRANSITION:
+        id = jet ? "MOVEMENT_BRIDGING" : "MOVEMENT_LINK_TRANSITION";
+        break;
+      case MOVEMENT_LINK_DIRECT:
+        id = "MOVEMENT_LINK_DIRECT";
+        break;
+      case MOVEMENT_RAMP_HELIX:
+        id = jet ? "MOVEMENT_PIERCE_CIRCULAR" : "MOVEMENT_RAMP_HELIX";
+        break;
+      case MOVEMENT_RAMP_PROFILE:
+        id = jet ? "MOVEMENT_PIERCE_PROFILE" : "MOVEMENT_RAMP_PROFILE";
+        break;
+      case MOVEMENT_RAMP_ZIG_ZAG:
+        id = jet ? "MOVEMENT_PIERCE_LINEAR" : "MOVEMENT_RAMP_ZIG_ZAG";
+        break;
+      case MOVEMENT_RAMP:
+        id = "MOVEMENT_RAMP";
+        break;
+      case MOVEMENT_PLUNGE:
+        id = jet ? "MOVEMENT_PIERCE" : "MOVEMENT_PLUNGE";
+        break;
+      case MOVEMENT_PREDRILL:
+        id = "MOVEMENT_PREDRILL";
+        break;
+      case MOVEMENT_EXTENDED:
+        id = "MOVEMENT_EXTENDED";
+        break;
+      case MOVEMENT_REDUCED:
+        id = "MOVEMENT_REDUCED";
+        break;
+      case MOVEMENT_HIGH_FEED:
+        id = "MOVEMENT_HIGH_FEED";
+        break;
+    }
+    if (id == undefined) {
+      id = String(movement);
+    }
+    writeComment(" " + id);
+  }
+}
+
 function onSpindleSpeed(spindleSpeed) {
   var s = sOutput.format(spindleSpeed);
-  writeComment(" Spindle Speed " + s);
+  if (properties.commentActivities) {
+    writeComment(" Spindle Speed " + s);
+  }
   writeln(s);
 }
 
 function onCommand(command) {
-  var stringId = getCommandStringId(command);
-  writeComment(" " + stringId);
+  if (properties.commentActivities) {
+    var stringId = getCommandStringId(command);
+    writeComment(" " + stringId);
+  }
   switch (command) {
     case COMMAND_START_SPINDLE:
       onCommand(tool.clockwise ? COMMAND_SPINDLE_CLOCKWISE : COMMAND_SPINDLE_COUNTERCLOCKWISE);
@@ -473,6 +557,102 @@ function onCommand(command) {
   }
 }
 
+function handleMinMax(pair, range) {
+  var rmin = range.getMinimum();
+  var rmax = range.getMaximum();
+  if (pair.min == undefined || pair.min > rmin) {
+    pair.min = rmin;
+  }
+  if (pair.max == undefined || pair.min < rmin) {
+    pair.max = rmax;
+  }
+}
+
+function writeFirstSection() {
+  // dump tool information
+  var toolZRanges = {};
+  var vectorX = new Vector(1, 0, 0);
+  var vectorY = new Vector(0, 1, 0);
+  var ranges = {
+    x: { min: undefined, max: undefined },
+    y: { min: undefined, max: undefined },
+    z: { min: undefined, max: undefined },
+  };
+  var numberOfSections = getNumberOfSections();
+  for (var i = 0; i < numberOfSections; ++i) {
+    var section = getSection(i);
+    var tool = section.getTool();
+    var zRange = section.getGlobalZRange();
+    var xRange = currentSection.getGlobalRange(vectorX);
+    var yRange = currentSection.getGlobalRange(vectorY);
+    handleMinMax(ranges.x, xRange);
+    handleMinMax(ranges.y, yRange);
+    handleMinMax(ranges.z, zRange);
+    if (is3D() && properties.commentWriteTools) {
+      if (toolZRanges[tool.number]) {
+        toolZRanges[tool.number].expandToRange(zRange);
+      } else {
+        toolZRanges[tool.number] = zRange;
+      }
+    }
+  }
+
+  writeComment(" ");
+  writeComment(" Ranges table:");
+  writeComment(" X: Min=" + xyzFormat.format(ranges.x.min) + " Max=" + xyzFormat.format(ranges.x.max) + " Size=" + xyzFormat.format(ranges.x.max - ranges.x.min));
+  writeComment(" Y: Min=" + xyzFormat.format(ranges.y.min) + " Max=" + xyzFormat.format(ranges.y.max) + " Size=" + xyzFormat.format(ranges.y.max - ranges.y.min));
+  writeComment(" Z: Min=" + xyzFormat.format(ranges.z.min) + " Max=" + xyzFormat.format(ranges.z.max) + " Size=" + xyzFormat.format(ranges.z.max - ranges.z.min));
+
+  if (properties.commentWriteTools) {
+    writeComment(" ");
+    writeComment(" Tools table:");
+    var tools = getToolTable();
+    if (tools.getNumberOfTools() > 0) {
+      for (var i = 0; i < tools.getNumberOfTools(); ++i) {
+        var tool = tools.getTool(i);
+        var comment = " T" + toolFormat.format(tool.number) + " D=" + xyzFormat.format(tool.diameter) + " CR=" + xyzFormat.format(tool.cornerRadius);
+        if ((tool.taperAngle > 0) && (tool.taperAngle < Math.PI)) {
+          comment += " TAPER=" + taperFormat.format(tool.taperAngle) + "deg";
+        }
+        if (toolZRanges[tool.number]) {
+          comment += " - ZMIN=" + xyzFormat.format(toolZRanges[tool.number].getMinimum());
+        }
+        comment += " - " + getToolTypeName(tool.type);
+        writeComment(comment);
+      }
+    }
+  }
+
+  if (properties.commentActivities) {
+    writeComment(" *======== START begin ==========* ");
+  }
+
+  if (properties.gcodeStartFile == "") {
+    writeln("G90"); // Set to Absolute Positioning
+    switch (unit) {
+      case IN:
+        writeln("G20"); // Set Units to Inches
+        break;
+      case MM:
+        writeln("G21"); // Set Units to Millimeters
+        break;
+    }
+    writeln("M84 S0"); // Disable steppers timeout
+    if (properties.setOriginOnStart) {
+      writeln("G92 X0 Y0 Z0"); // Set origin to initial position
+    }
+  } else {
+    loadFile(properties.gcodeStartFile);
+  }
+  if (properties.probeOnStart && tool.number != 0) {
+    onCommand(COMMAND_TOOL_MEASURE);
+  }
+  onCommand(COMMAND_START_SPINDLE);
+  if (properties.commentActivities) {
+    writeComment(" *======== START end ==========* ");
+  }
+}
+
 // Output a comment
 function writeComment(text) {
   writeln(";" + String(text).replace(/[\(\)]/g, ""));
@@ -486,12 +666,12 @@ function rapidMovements(_x, _y, _z) {
   var z = zOutput.format(_z);
 
   if (z) {
-    f = fOutput.format(adaptSpatial(properties.travelSpeedZ));
+    f = fOutput.format(propertyMmToUnit(properties.travelSpeedZ));
     fOutput.reset();
     writeln("G0" + z + f);
   }
   if (x || y) {
-    f = fOutput.format(adaptSpatial(properties.travelSpeedXY));
+    f = fOutput.format(propertyMmToUnit(properties.travelSpeedXY));
     fOutput.reset();
     writeln("G0" + x + y + f);
   }
@@ -538,7 +718,9 @@ function circularMovements(_clockwise, _cx, _cy, _cz, _x, _y, _z, _feed) {
 function toolChange() {
   if (properties.gcodeToolFile == "") {
     // Builtin tool change gcode
-    writeComment(" *======== CHANGE TOOL begin ==========* ");
+    if (properties.commentActivities) {
+      writeComment(" *======== CHANGE TOOL begin ==========* ");
+    }
 
     onCommand(COMMAND_COOLANT_OFF);
     // Beep
@@ -546,7 +728,7 @@ function toolChange() {
     writeln("M300 S400 P2000");
 
     // Go to tool change position
-    onRapid(adaptSpatial(properties.toolChangeX), adaptSpatial(properties.toolChangeY), adaptSpatial(properties.toolChangeZ));
+    onRapid(propertyMmToUnit(properties.toolChangeX), propertyMmToUnit(properties.toolChangeY), propertyMmToUnit(properties.toolChangeZ));
 
     onCommand(COMMAND_STOP_SPINDLE);
 
@@ -564,7 +746,9 @@ function toolChange() {
       onCommand(COMMAND_TOOL_MEASURE);
     }
     onCommand(COMMAND_START_SPINDLE);
-    writeComment(" *======== CHANGE TOOL end ==========* ");
+    if (properties.commentActivities) {
+      writeComment(" *======== CHANGE TOOL end ==========* ");
+    }
   } else {
     // Custom tool change gcode
     loadFile(properties.gcodeToolFile);
@@ -574,20 +758,24 @@ function toolChange() {
 // Probe tool
 function probeTool() {
   if (properties.gcodeProbeFile == "") {
-    writeComment(" +------- Probe tool -------+ ");
+    if (properties.commentActivities) {
+      writeComment(" +------- Probe tool -------+ ");
+    }
     writeln("M0 Attach ZProbe");
     // refer http://marlinfw.org/docs/gcode/G038.html
     if (properties.probeUseHomeZ) {
       writeln("G28 Z");
     } else {
-      writeln("G38.3" + fOutput.format(adaptSpatial(properties.probeG38Speed)) + zOutput.format(adaptSpatial(properties.probeG38Target)));
+      writeln("G38.3" + fOutput.format(propertyMmToUnit(properties.probeG38Speed)) + zOutput.format(propertyMmToUnit(properties.probeG38Target)));
     }
-    writeln("G92" + zOutput.format(adaptSpatial(properties.probeThickness)));
+    writeln("G92" + zOutput.format(propertyMmToUnit(properties.probeThickness)));
     if (properties.toolChangeZ != "") { // move up tool to safe height again after probing
-      writeln("G0" + zOutput.format(adaptSpatial(properties.toolChangeZ)) + fOutput.format(adaptSpatial(properties.travelSpeedZ)));
+      writeln("G0" + zOutput.format(propertyMmToUnit(properties.toolChangeZ)) + fOutput.format(propertyMmToUnit(properties.travelSpeedZ)));
     }
     writeln("M0 Detach ZProbe");
-    writeComment(" +------- Tool probed -------+ ");
+    if (properties.commentActivities) {
+      writeComment(" +------- Tool probed -------+ ");
+    }
   } else {
     loadFile(properties.gcodeProbeFile);
   }
@@ -634,6 +822,6 @@ function setCoolant(coolant) {
   currentCoolantMode = coolant;
 }
 
-function adaptSpatial(_v) {
+function propertyMmToUnit(_v) {
   return (_v / (unit == IN ? 25.4 : 1));
 }

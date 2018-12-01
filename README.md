@@ -79,6 +79,16 @@ Coolant: B Mode|Enable issuing g-codes for control Coolant channel B|**0**|off=0
 Coolant: B On command|GCode command to turn on Coolant channel B|**M42 P6 S255"**||
 Coolant: B Off command|Gcode command to turn off Coolant channel B|**M42 P6 S0"**||
 
+## Group 7: Write comments into g-code
+
+|Title|Description|Default|
+|---|---|---|
+Comment: Write Tools|Write table of used tools in job header|true|
+Comment: Sections|Write header of every section|true|
+Comment: Activities|Write comments which somehow helps to understand current piece of g-code|true|
+Comment: Trace Commands|Write stringified commands called by CAM|true|
+Comment: Trace Movements|Write stringified movements called by CAM|true|
+
 
 # Sample of issued code blocks
 

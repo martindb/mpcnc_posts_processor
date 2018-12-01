@@ -8,11 +8,13 @@ CAM posts processor for use with Fusion 360 and [MPCNC](https://www.v1engineerin
 
 Some design points:
 - Setup operation types: Milling, Water/Laser/Plasma
-- Only support MM units (inches may work with custom start gcode - NOT TESTED)
+- Support MM and Inches units (**but all properties MUST be set in MM**)
 - XY and Z independent travel speeds. Rapids are done with G0.
 - Arcs support on XY plane
 - Tested with LCD display and SD card (built in tool change require printing from SD and LCD to restart)
 - Support for 3 different laser power using "cutting modes" (through, etch, vaporize)
+- Support 2 coolant channels. You may attach relays to control external devices - as example air jet valve.
+- Customizable level of verbosity of comments
 
 ![screenshot](/screenshot.jpg "screenshot")
 

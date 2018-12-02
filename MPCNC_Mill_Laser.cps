@@ -346,6 +346,7 @@ function onSection() {
   writeln("M400");
   writeln("M117 " + sectionComment);
 
+  onCommand(COMMAND_START_SPINDLE);
   // set coolant after we have positioned at Z
   onCommand(COMMAND_COOLANT_ON);
   return;
@@ -493,12 +494,41 @@ function onMovement(movement) {
   }
 }
 
-function onSpindleSpeed(spindleSpeed) {
-  var s = sOutput.format(spindleSpeed);
-  if (properties.commentActivities) {
-    writeComment(" Spindle Speed " + s);
+var currentSpindleSpeed = 0;
+
+function setSpindeSpeed(_spindleSpeed, _clockwise) {
+  if (properties.manualSpindlePowerControl && _spindleSpeed > 0) {
+    _spindleSpeed = 1; // for manula any positive input speed assumed as enabled. so it's just a flag
   }
-  writeln(s);
+
+  if (currentSpindleSpeed != _spindleSpeed) {
+    if (_spindleSpeed > 0) {
+      if (properties.manualSpindlePowerControl) {
+        writeln("M0 Turn ON spindle");
+      } else {
+        var s = sOutput.format(spindleSpeed);
+        if (properties.commentActivities) {
+          writeComment(" Spindle Speed " + s);
+        }
+        if (_clockwise) {
+          writeln("M3" + s);
+        } else {
+          writeln("M4" + s);
+        }
+      }
+    } else {
+      if (properties.manualSpindlePowerControl) {
+        writeln("M0 Turn OFF spindle");
+      } else {
+        writeln("M5");
+      }
+    }
+    currentSpindleSpeed = _spindleSpeed;
+  }
+}
+
+function onSpindleSpeed(spindleSpeed) {
+  setSpindeSpeed(spindleSpeed, tool.clockwise);
 }
 
 function onCommand(command) {
@@ -513,29 +543,17 @@ function onCommand(command) {
     case COMMAND_SPINDLE_CLOCKWISE:
       if (tool.jetTool)
         return;
-      if (properties.manualSpindlePowerControl) {
-        writeln("M0 Turn ON CLOCKWISE");
-      } else {
-        writeln("M3" + sOutput.format(spindleSpeed));
-      }
+      setSpindeSpeed(spindleSpeed, true);
       return;
     case COMMAND_SPINDLE_COUNTERCLOCKWISE:
       if (tool.jetTool)
         return;
-      if (properties.manualSpindlePowerControl) {
-        writeln("M0 Turn ON COUNTERCLOCKWISE");
-      } else {
-        writeln("M4" + sOutput.format(spindleSpeed));
-      }
+      setSpindeSpeed(spindleSpeed, false);
       return;
     case COMMAND_STOP_SPINDLE:
       if (tool.jetTool)
         return;
-      if (properties.manualSpindlePowerControl) {
-        writeln("M0 Turn OFF spindle");
-      } else {
-        writeln("M5");
-      }
+      setSpindeSpeed(0, true);
       return;
     case COMMAND_COOLANT_ON:
       setCoolant(tool.coolant);
@@ -583,8 +601,8 @@ function writeFirstSection() {
     var section = getSection(i);
     var tool = section.getTool();
     var zRange = section.getGlobalZRange();
-    var xRange = currentSection.getGlobalRange(vectorX);
-    var yRange = currentSection.getGlobalRange(vectorY);
+    var xRange = section.getGlobalRange(vectorX);
+    var yRange = section.getGlobalRange(vectorY);
     handleMinMax(ranges.x, xRange);
     handleMinMax(ranges.y, yRange);
     handleMinMax(ranges.z, zRange);
@@ -647,7 +665,6 @@ function writeFirstSection() {
   if (properties.probeOnStart && tool.number != 0) {
     onCommand(COMMAND_TOOL_MEASURE);
   }
-  onCommand(COMMAND_START_SPINDLE);
   if (properties.commentActivities) {
     writeComment(" *======== START end ==========* ");
   }
@@ -745,7 +762,6 @@ function toolChange() {
     if (properties.toolChangeZProbe && tool.number != 0) {
       onCommand(COMMAND_TOOL_MEASURE);
     }
-    onCommand(COMMAND_START_SPINDLE);
     if (properties.commentActivities) {
       writeComment(" *======== CHANGE TOOL end ==========* ");
     }

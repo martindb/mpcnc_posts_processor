@@ -1,14 +1,8 @@
 /*
 
-MPCNC posts processor for milling and laser/plasma cutting.
+https://github.com/guffy1234/mpcnc_posts_processor
 
-Some design points:
-- Setup operation types: Milling, Water/Laser/Plasma
-- Only support MM units (inches may work with custom start gcode - NOT TESTED)
-- XY and Z independent travel speeds. Rapids are done with G1.
-- Arcs support on XY plane
-- Tested with LCD display and SD card (built in tool change require printing from SD and LCD to restart)
-- Support for 3 different laser power using "cutting modes" (through, etch, vaporize)
+MPCNC posts processor for milling and laser/plasma cutting.
 
 */
 
@@ -89,15 +83,15 @@ propertyDefinitions = {
   },
   toolChangeX: {
     title: "Change: X", description: "X position for builtin tool change", group: 2,
-    type: "number", default_mm: 0, default_in: 0
+    type: "spatial", default_mm: 0, default_in: 0
   },
   toolChangeY: {
     title: "Change: Y", description: "Y position for builtin tool change", group: 2,
-    type: "number", default_mm: 0, default_in: 0
+    type: "spatial", default_mm: 0, default_in: 0
   },
   toolChangeZ: {
     title: "Change: Z ", description: "Z position for builtin tool change", group: 2,
-    type: "number", default_mm: 40, default_in: 1.6
+    type: "spatial", default_mm: 40, default_in: 1.6
   },
   toolChangeZProbe: {
     title: "Change: Make Z Probe", description: "Z probe after tool change", group: 2,
@@ -114,7 +108,7 @@ propertyDefinitions = {
   },
   probeThickness: {
     title: "Probe: Plate thickness", description: "Plate thickness", group: 3,
-    type: "number", default_mm: 0.8, default_in: 0.032
+    type: "spatial", default_mm: 0.8, default_in: 0.032
   },
   probeUseHomeZ: {
     title: "Probe: Use Home Z", description: "Use G28 or G38 for probing", group: 3,
@@ -122,11 +116,11 @@ propertyDefinitions = {
   },
   probeG38Target: {
     title: "Probe: G38 target", description: "Probing up to Z position", group: 3,
-    type: "number", default_mm: -10, default_in: -0.5
+    type: "spatial", default_mm: -10, default_in: -0.5
   },
   probeG38Speed: {
     title: "Probe: G38 speed", description: "Probing with speed (mm/min; in/min)", group: 3,
-    type: "number", default_mm: 30, default_in: 1.2
+    type: "spatial", default_mm: 30, default_in: 1.2
   },
 
   cutterOnVaporize: {
@@ -236,6 +230,10 @@ extension = "gcode";
 setCodePage("ascii");
 capabilities = CAPABILITY_MILLING | CAPABILITY_JET;
 description = "MPCNC Marlin 2.0 Milling/Laser";
+// vendor of MPCNC
+vendor = "v1engineering";
+vendorUrl="https://www.v1engineering.com";
+// postprocessor origin https://github.com/guffy1234/mpcnc_posts_processor
 
 // Formats
 var xyzFormat = createFormat({ decimals: (unit == MM ? 3 : 4) });

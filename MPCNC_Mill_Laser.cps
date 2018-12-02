@@ -232,7 +232,7 @@ capabilities = CAPABILITY_MILLING | CAPABILITY_JET;
 description = "MPCNC Marlin 2.0 Milling/Laser";
 // vendor of MPCNC
 vendor = "v1engineering";
-vendorUrl="https://www.v1engineering.com";
+vendorUrl = "https://www.v1engineering.com";
 // postprocessor origin https://github.com/guffy1234/mpcnc_posts_processor
 
 // Formats
@@ -270,9 +270,7 @@ function onOpen() {
 
 // Called at end of gcode file
 function onClose() {
-  if (properties.commentActivities) {
-    writeComment(" *** STOP begin ***");
-  }
+  writeActivityComment(" *** STOP begin ***");
   writeln("M400");
   if (properties.gcodeStopFile == "") {
     onCommand(COMMAND_COOLANT_OFF);
@@ -282,9 +280,7 @@ function onClose() {
       //onRapid(0,0,position.z);
     }
     writeln("M117 Job end");
-    if (properties.commentActivities) {
-      writeComment(" *** STOP end ***");
-    }
+    writeActivityComment(" *** STOP end ***");
   } else {
     loadFile(properties.gcodeStopFile);
   }
@@ -301,9 +297,7 @@ function onSection() {
   if (isFirstSection()) {
     writeFirstSection();
   }
-  if (properties.commentActivities) {
-    writeComment(" *** SECTION begin ***");
-  }
+  writeActivityComment(" *** SECTION begin ***");
 
   // Tool change
   if (properties.toolChangeEnabled && !isFirstSection() && tool.number != getPreviousSection().getTool().number) {
@@ -357,9 +351,7 @@ function onSectionEnd() {
   yOutput.reset();
   zOutput.reset();
   fOutput.reset();
-  if (properties.commentActivities) {
-    writeComment(" *** SECTION end ***");
-  }
+  writeActivityComment(" *** SECTION end ***");
   writeln("");
   return;
 }
@@ -391,14 +383,10 @@ var powerState = false;
 function onPower(power) {
   if (power != powerState) {
     if (power) {
-      if (properties.commentActivities) {
-        writeComment(" >>> LASER Power ON");
-      }
+      writeActivityComment(" >>> LASER Power ON");
       writeln(cutterOnGCodeOfCurrentMode);
     } else {
-      if (properties.commentActivities) {
-        writeComment(" >>> LASER Power OFF");
-      }
+      writeActivityComment(" >>> LASER Power OFF");
       writeln(properties.cutterOff);
     }
     powerState = power;
@@ -408,9 +396,7 @@ function onPower(power) {
 
 // Called on Dwell Manual NC invocation
 function onDwell(seconds) {
-  if (properties.commentActivities) {
-    writeComment(" >>> Dwell");
-  }
+  writeActivityComment(" >>> Dwell");
   writeln("G4 S" + seconds);
   writeln("");
   return;
@@ -509,9 +495,7 @@ function setSpindeSpeed(_spindleSpeed, _clockwise) {
         writeln("M0 Turn ON spindle");
       } else {
         var s = sOutput.format(spindleSpeed);
-        if (properties.commentActivities) {
-          writeComment(" >>> Spindle Speed " + speedFormat.format(_spindleSpeed));
-        }
+        writeActivityComment(" >>> Spindle Speed " + speedFormat.format(_spindleSpeed));
         if (_clockwise) {
           writeln("M3" + s);
         } else {
@@ -643,9 +627,7 @@ function writeFirstSection() {
     }
   }
   writeln("");
-  if (properties.commentActivities) {
-    writeComment(" *** START begin ***");
-  }
+  writeActivityComment(" *** START begin ***");
 
   if (properties.gcodeStartFile == "") {
     writeln("G90"); // Set to Absolute Positioning
@@ -667,9 +649,7 @@ function writeFirstSection() {
   if (properties.probeOnStart && tool.number != 0) {
     onCommand(COMMAND_TOOL_MEASURE);
   }
-  if (properties.commentActivities) {
-    writeComment(" *** START end ***");
-  }
+  writeActivityComment(" *** START end ***");
   writeln("");
 }
 
@@ -738,9 +718,7 @@ function circularMovements(_clockwise, _cx, _cy, _cz, _x, _y, _z, _feed) {
 function toolChange() {
   if (properties.gcodeToolFile == "") {
     // Builtin tool change gcode
-    if (properties.commentActivities) {
-      writeComment(" --- CHANGE TOOL begin ---");
-    }
+    writeActivityComment(" --- CHANGE TOOL begin ---");
 
     writeln("M400"); // Wait movement buffer it's empty
     // Go to tool change position
@@ -764,9 +742,7 @@ function toolChange() {
     if (properties.toolChangeZProbe && tool.number != 0) {
       onCommand(COMMAND_TOOL_MEASURE);
     }
-    if (properties.commentActivities) {
-      writeComment(" --- CHANGE TOOL end ---");
-    }
+    writeActivityComment(" --- CHANGE TOOL end ---");
   } else {
     // Custom tool change gcode
     loadFile(properties.gcodeToolFile);
@@ -776,9 +752,7 @@ function toolChange() {
 // Probe tool
 function probeTool() {
   if (properties.gcodeProbeFile == "") {
-    if (properties.commentActivities) {
-      writeComment(" --- PROBE TOOL begin ---");
-    }
+    writeActivityComment(" --- PROBE TOOL begin ---");
     writeln("M0 Attach ZProbe");
     // refer http://marlinfw.org/docs/gcode/G038.html
     if (properties.probeUseHomeZ) {
@@ -791,9 +765,7 @@ function probeTool() {
       writeln("G0" + zOutput.format(propertyMmToUnit(properties.toolChangeZ)) + fOutput.format(propertyMmToUnit(properties.travelSpeedZ)));
     }
     writeln("M0 Detach ZProbe");
-    if (properties.commentActivities) {
-      writeComment(" --- PROBE TOOL end ---");
-    }
+    writeActivityComment(" --- PROBE TOOL end ---");
   } else {
     loadFile(properties.gcodeProbeFile);
   }
@@ -805,9 +777,9 @@ function loadFile(_file) {
   if (FileSystem.isFile(folder + _file)) {
     var txt = loadText(folder + _file, "utf-8");
     if (txt.length > 0) {
-      writeComment(" --- Start custom gcode " + folder + _file);
+      writeActivityComment(" --- Start custom gcode " + folder + _file);
       write(txt);
-      writeComment(" --- End custom gcode " + folder + _file);
+      writeActivityComment(" --- End custom gcode " + folder + _file);
       writeln("");
     }
   } else {
@@ -825,27 +797,19 @@ function setCoolant(coolant) {
   }
   if (properties.coolantAMode != 0 && properties.coolantAOn != "" && properties.coolantAOff != "") {
     if (currentCoolantMode == properties.coolantAMode) {
-      if (properties.commentActivities) {
-        writeComment(" >>> Coolant A OFF");
-      }
+      writeActivityComment(" >>> Coolant A OFF");
       writeln(properties.coolantAOff);
     } else if (coolant == properties.coolantAMode) {
-      if (properties.commentActivities) {
-        writeComment(" >>> Coolant A ON");
-      }
+      writeActivityComment(" >>> Coolant A ON");
       writeln(properties.coolantAOn);
     }
   }
   if (properties.coolantBMode != 0 && properties.coolantBOn != "" && properties.coolantBOff != "") {
     if (currentCoolantMode == properties.coolantBMode) {
-      if (properties.commentActivities) {
-        writeComment(" >>> Coolant B OFF");
-      }
+      writeActivityComment(" >>> Coolant B OFF");
       writeln(properties.coolantBOff);
     } else if (coolant == properties.coolantBMode) {
-      if (properties.commentActivities) {
-        writeComment(" >>> Coolant B ON");
-      }
+      writeActivityComment(" >>> Coolant B ON");
       writeln(properties.coolantBOn);
     }
   }
@@ -854,4 +818,10 @@ function setCoolant(coolant) {
 
 function propertyMmToUnit(_v) {
   return (_v / (unit == IN ? 25.4 : 1));
+}
+
+function writeActivityComment(_comment) {
+  if (properties.commentActivities) {
+    writeComment(_comment);
+  }
 }

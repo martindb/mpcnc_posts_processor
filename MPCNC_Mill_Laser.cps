@@ -340,13 +340,11 @@ function onSection() {
     writeComment(" Z Min: " + xyzFormat.format(currentSection.getGlobalZRange().getMinimum()) + " - Z Max: " + xyzFormat.format(currentSection.getGlobalZRange().getMaximum()));
   }
 
-  // Display section name in LCD
   writeln("M400");
-  writeln("M117 " + sectionComment);
-
   onCommand(COMMAND_START_SPINDLE);
-  // set coolant after we have positioned at Z
   onCommand(COMMAND_COOLANT_ON);
+  // Display section name in LCD
+  writeln("M117 " + sectionComment);
   return;
 }
 

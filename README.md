@@ -27,8 +27,11 @@ Some design points:
 Job: Travel Speed XY|High speed for travel movements X & Y (mm/min).|**2500 mm/min**|
 Job: Travel Speed Z|High speed for travel movements Z (mm/min).|**300 mm/min**|
 Job: Manual Spindle On/Off|Set it to true when the motor of your spindle is controlled by manual switch. So the preprocessor will issue additional pauses for TURN ON/TURN OFF the motor.|**true**|
+Job: Use Arcs|Use G2/G3 g-codes fo circular movements.|**true**|
 Job: Reset on start (G92)|Set origin when gcode start (G92 X0 Y0 Z0). Only apply if not using gcodeStartFile.|**true**|
 Job: Goto 0 at end|Go X0 Y0 at gcode end. Useful to find if your machine loss steeps or have any other mechanic issue (like loose pulleys). Also useful for repetitive jobs. Only apply if not using gcodeStopFile.|**true**|
+Job: Use Arcs|Use G2/G3 g-codes fo circular movements.|**true**|
+Job: Enforce feedrate|Add feedrate to each movement g-code.|**false**|
   
 ## Group 2: Tool change
 

@@ -9,13 +9,16 @@ MPCNC posts processor for milling and laser/plasma cutting.
 
 // user-defined properties
 properties = {
-  travelSpeedXY: 2500,              // High speed for travel movements X & Y (mm/min)
-  travelSpeedZ: 300,                // High speed for travel movements Z (mm/min)
+  jobTravelSpeedXY: 2500,              // High speed for travel movements X & Y (mm/min)
+  jobTravelSpeedZ: 300,                // High speed for travel movements Z (mm/min)
 
-  manualSpindlePowerControl: true,   // Spindle motor is controlled by manual switch 
+  jobManualSpindlePowerControl: true,   // Spindle motor is controlled by manual switch 
 
-  setOriginOnStart: true,           // Set origin when gcode start (G92)
-  goOriginOnFinish: true,           // Go X0 Y0 Z0 at gcode end
+  jobUseArcs: true,                    // Produce G2/G3 for arcs
+  jobEnforceFeedrate: false,           // Add feedrate to each movement line
+
+  jobSetOriginOnStart: true,           // Set origin when gcode start (G92)
+  jobGoOriginOnFinish: true,           // Go X0 Y0 Z0 at gcode end
 
   toolChangeEnabled: true,          // Enable tool change code (bultin tool change requires LCD display)
   toolChangeX: 0,                   // X position for builtin tool change
@@ -55,24 +58,34 @@ properties = {
 };
 
 propertyDefinitions = {
-  travelSpeedXY: {
+  jobTravelSpeedXY: {
     title: "Job: Travel speed X/Y", description: "High speed for travel movements X & Y (mm/min; in/min)", group: 1,
     type: "spatial", default_mm: 2500, default_in: 100
   },
-  travelSpeedZ: {
+  jobTravelSpeedZ: {
     title: "Job: Travel Speed Z", description: "High speed for travel movements z (mm/min; in/min)", group: 1,
     type: "spatial", default_mm: 300, default_in: 12
   },
 
-  manualSpindlePowerControl: {
+  jobManualSpindlePowerControl: {
     title: "Job: Manual Spindle On/Off", description: "Set Yes when your spindle motor is controlled by manual switch", group: 1,
     type: "boolean", default_mm: true, default_in: true
   },
-  setOriginOnStart: {
+  jobUseArcs: {
+    title: "Job: Use Arcs", description: "Use G2/G3 g-codes fo circular movements", group: 1,
+    type: "boolean", default_mm: true, default_in: true
+  },
+
+  jobEnforceFeedrate: {
+    title: "Job: Enforce Feedrate", description: "Add feedrate to each movement g-code", group: 1,
+    type: "boolean", default_mm: false, default_in: false
+  },
+
+  jobSetOriginOnStart: {
     title: "Job: Reset on start (G92)", description: "Set origin when gcode start (G92)", group: 1,
     type: "boolean", default_mm: true, default_in: true
   },
-  goOriginOnFinish: {
+  jobGoOriginOnFinish: {
     title: "Job: Goto 0 at end", description: "Go X0 Y0 at gcode end", group: 1,
     type: "boolean", default_mm: true, default_in: true
   },
@@ -275,9 +288,8 @@ function onClose() {
   if (properties.gcodeStopFile == "") {
     onCommand(COMMAND_COOLANT_OFF);
     onCommand(COMMAND_STOP_SPINDLE);
-    if (properties.goOriginOnFinish) {
-      writeln("G0 X0 Y0" + fOutput.format(propertyMmToUnit(properties.travelSpeedXY))); // Go to XY origin
-      //onRapid(0,0,position.z);
+    if (properties.jobGoOriginOnFinish) {
+      rapidMovementsXY(0,0);
     }
     writeln("M117 Job end");
     writeActivityComment(" *** STOP end ***");
@@ -373,7 +385,11 @@ function onLinear(x, y, z, feed) {
 }
 
 function onCircular(clockwise, cx, cy, cz, x, y, z, feed) {
-  circularMovements(clockwise, cx, cy, cz, x, y, z, feed);
+  if (properties.jobUseArcs) {
+    circularMovements(clockwise, cx, cy, cz, x, y, z, feed);
+  } else {
+    linearize(tolerance);
+  }
   return;
 }
 
@@ -485,14 +501,15 @@ function onMovement(movement) {
 var currentSpindleSpeed = 0;
 
 function setSpindeSpeed(_spindleSpeed, _clockwise) {
-  if (properties.manualSpindlePowerControl && _spindleSpeed > 0) {
+  var _rpm=_spindleSpeed;
+  if (properties.jobManualSpindlePowerControl && _spindleSpeed > 0) {
     _spindleSpeed = 1; // for manula any positive input speed assumed as enabled. so it's just a flag
   }
 
   if (currentSpindleSpeed != _spindleSpeed) {
     if (_spindleSpeed > 0) {
-      if (properties.manualSpindlePowerControl) {
-        writeln("M0 Turn ON spindle");
+      if (properties.jobManualSpindlePowerControl) {
+        writeln("M0 Turn ON " + speedFormat.format(_rpm)+"RPM");
       } else {
         var s = sOutput.format(spindleSpeed);
         writeActivityComment(" >>> Spindle Speed " + speedFormat.format(_spindleSpeed));
@@ -503,7 +520,7 @@ function setSpindeSpeed(_spindleSpeed, _clockwise) {
         }
       }
     } else {
-      if (properties.manualSpindlePowerControl) {
+      if (properties.jobManualSpindlePowerControl) {
         writeln("M0 Turn OFF spindle");
       } else {
         writeln("M5");
@@ -573,6 +590,11 @@ function handleMinMax(pair, range) {
 }
 
 function writeFirstSection() {
+  if(properties.jobEnforceFeedrate)
+  {
+    fOutput = createVariable({ prefix: " F", force: true }, feedFormat);
+  }
+
   // dump tool information
   var toolZRanges = {};
   var vectorX = new Vector(1, 0, 0);
@@ -640,7 +662,7 @@ function writeFirstSection() {
         break;
     }
     writeln("M84 S0"); // Disable steppers timeout
-    if (properties.setOriginOnStart) {
+    if (properties.jobSetOriginOnStart) {
       writeln("G92 X0 Y0 Z0"); // Set origin to initial position
     }
   } else {
@@ -660,22 +682,27 @@ function writeComment(text) {
 }
 
 // Rapid movements with G1 and differentiated travel speeds for XY and Z
-function rapidMovements(_x, _y, _z) {
+function rapidMovementsXY(_x, _y) {
   var x = xOutput.format(_x);
   var y = yOutput.format(_y);
-  var z = zOutput.format(_z);
-
-  if (z) {
-    f = fOutput.format(propertyMmToUnit(properties.travelSpeedZ));
-    fOutput.reset();
-    writeln("G0" + z + f);
-  }
   if (x || y) {
-    f = fOutput.format(propertyMmToUnit(properties.travelSpeedXY));
+    f = fOutput.format(propertyMmToUnit(properties.jobTravelSpeedXY));
     fOutput.reset();
     writeln("G0" + x + y + f);
   }
-  return;
+}
+function rapidMovementsZ(_z) {
+  var z = zOutput.format(_z);
+  if (z) {
+    f = fOutput.format(propertyMmToUnit(properties.jobTravelSpeedZ));
+    fOutput.reset();
+    writeln("G0" + z + f);
+  }
+}
+
+function rapidMovements(_x, _y, _z) {
+  rapidMovementsZ(_z);
+  rapidMovementsXY(_x, _y);
 }
 
 // Linear movements
@@ -762,7 +789,7 @@ function probeTool() {
     }
     writeln("G92" + zOutput.format(propertyMmToUnit(properties.probeThickness)));
     if (properties.toolChangeZ != "") { // move up tool to safe height again after probing
-      writeln("G0" + zOutput.format(propertyMmToUnit(properties.toolChangeZ)) + fOutput.format(propertyMmToUnit(properties.travelSpeedZ)));
+      rapidMovementsZ(propertyMmToUnit(properties.toolChangeZ));
     }
     writeln("M0 Detach ZProbe");
     writeActivityComment(" --- PROBE TOOL end ---");

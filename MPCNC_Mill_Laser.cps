@@ -253,6 +253,7 @@ var xyzFormat = createFormat({ decimals: (unit == MM ? 3 : 4) });
 var feedFormat = createFormat({ decimals: (unit == MM ? 0 : 2) });
 var speedFormat = createFormat({ decimals: 0 });
 var toolFormat = createFormat({ decimals: 0 });
+var taperFormat = createFormat({decimals:1, scale:DEG});
 
 // Linear outputs
 var xOutput = createVariable({ prefix: " X" }, xyzFormat);

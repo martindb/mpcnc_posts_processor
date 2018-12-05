@@ -643,7 +643,7 @@ function writeFirstSection() {
         if (toolZRanges[tool.number]) {
           comment += " - ZMIN=" + xyzFormat.format(toolZRanges[tool.number].getMinimum());
         }
-        comment += " - " + getToolTypeName(tool.type);
+        comment += " - " + getToolTypeName(tool.type) + " " + tool.comment;
         writeComment(comment);
       }
     }
@@ -763,7 +763,7 @@ function toolChange() {
     }
 
     // Ask tool change and wait user to touch lcd button
-    writeln("M0 Put tool " + tool.number + " - " + tool.comment);
+    writeln("M0 Tool " + tool.number + " " + tool.comment);
 
     // Run Z probe gcode
     if (properties.toolChangeZProbe && tool.number != 0) {

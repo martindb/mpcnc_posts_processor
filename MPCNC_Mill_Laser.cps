@@ -491,6 +491,9 @@ function onMovement(movement) {
       case MOVEMENT_HIGH_FEED:
         id = "MOVEMENT_HIGH_FEED";
         break;
+      case MOVEMENT_FINISH_CUTTING:
+        id = "MOVEMENT_FINISH_CUTTING";
+        break;
     }
     if (id == undefined) {
       id = String(movement);

@@ -288,10 +288,10 @@ function onClose() {
   writeln("M400");
   if (properties.gcodeStopFile == "") {
     onCommand(COMMAND_COOLANT_OFF);
-    onCommand(COMMAND_STOP_SPINDLE);
     if (properties.jobGoOriginOnFinish) {
       rapidMovementsXY(0,0);
     }
+    onCommand(COMMAND_STOP_SPINDLE);
     writeln("M117 Job end");
     writeActivityComment(" *** STOP end ***");
   } else {
@@ -525,6 +525,7 @@ function setSpindeSpeed(_spindleSpeed, _clockwise) {
       }
     } else {
       if (properties.jobManualSpindlePowerControl) {
+        Beep(); 
         writeln("M0 Turn OFF spindle");
       } else {
         writeln("M5");
@@ -745,6 +746,12 @@ function circularMovements(_clockwise, _cx, _cy, _cz, _x, _y, _z, _feed) {
   return;
 }
 
+function Beep()
+{
+  // Beep
+  writeln("M300 S400 P2000");
+}
+
 // Tool change
 function toolChange() {
   if (properties.gcodeToolFile == "") {
@@ -757,9 +764,11 @@ function toolChange() {
     // turn off spindle and coolant
     onCommand(COMMAND_COOLANT_OFF);
     onCommand(COMMAND_STOP_SPINDLE);
-    // Beep
-    writeln("M300 S400 P2000");
-
+    if(!properties.jobManualSpindlePowerControl)
+    {
+      Beep();
+    }
+  
     // Disable Z stepper
     if (properties.toolChangeDisableZStepper) {
       writeln("M0 Z Stepper will disabled. Wait for STOP!!");

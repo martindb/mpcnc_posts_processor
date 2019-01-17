@@ -513,9 +513,6 @@ function onSection() {
           error("Cutting mode is not supported.");
       }
       writeComment(sectionComment + " - Laser/Plasma - Cutting mode: " + getParameter("operation:cuttingMode"));
-      if (jobfirmwares.GRBL == properties.jobFirmware) {
-        writeBlock("$32=1");
-      }
     }
 
     // Print min/max boundaries for each section
@@ -540,11 +537,6 @@ function onSectionEnd() {
   yOutput.reset();
   zOutput.reset();
   fOutput.reset();
-  if (currentSection.type == TYPE_JET) {
-    if (jobfirmwares.GRBL == properties.jobFirmware) {
-      writeBlock("$32=0");
-    }
-  }
   writeActivityComment(" *** SECTION end ***");
   writeln("");
   return;

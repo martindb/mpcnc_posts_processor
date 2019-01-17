@@ -20,7 +20,7 @@ Some design points:
 - Support 2 coolant channels. You may attach relays to control external devices - as example air jet valve.
 - Customizable level of verbosity of comments
 - Support line numbers
-- Support GRBL laser mode
+- Support GRBL laser mode (**be noted that you probably to have enabled laser mode [$32=1](https://github.com/gnea/grbl/wiki/Grbl-v1.1-Laser-Mode)**)
 
 ![screenshot](/screenshot.jpg "screenshot")
 

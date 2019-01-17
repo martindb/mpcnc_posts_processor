@@ -63,7 +63,7 @@ Probe: G38 speed|Probing with speed|**30**|
 ## Group 4: Laser/Plasma related
 
 |Title|Description|Default|Values|
-|---|---|---|
+|---|---|---||
 Laser: On - Vaporize|Persent of power to turn on the laser/plasma cutter in vaporize mode|**100**||
 Laser: On - Through|Persent of power to turn on the laser/plasma cutter in through mode|**80**||
 Laser: On - Etch|Persent of power to turn on the laser/plasma cutter in etch mode|**40**||

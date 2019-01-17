@@ -1,10 +1,14 @@
 
-MPCNC Fusion 360 CAM posts processor
+DIY CNC Fusion 360 CAM posts processor
 ====
 
 This is modified fork of https://github.com/martindb/mpcnc_posts_processor
 
-CAM posts processor for use with Fusion 360 and [MPCNC](https://www.v1engineering.com/assembly/) with RAMPS/Marlin
+CAM posts processor for use with Fusion 360 and [MPCNC](https://www.v1engineering.com/assembly/) with RAMPS or any 3-axis DIY CNC.
+Supported firmwares:
+- Marlin 2.0
+- Repetier firmware 1.0.3 (not tested. gcode is same as for Marlin)
+- GRBL 1.1
 
 Some design points:
 - Setup operation types: Milling, Water/Laser/Plasma
@@ -15,6 +19,8 @@ Some design points:
 - Support for 3 different laser power using "cutting modes" (through, etch, vaporize)
 - Support 2 coolant channels. You may attach relays to control external devices - as example air jet valve.
 - Customizable level of verbosity of comments
+- Support line numbers
+- Support GRBL laser mode
 
 ![screenshot](/screenshot.jpg "screenshot")
 

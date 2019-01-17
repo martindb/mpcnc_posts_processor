@@ -24,6 +24,7 @@ Some design points:
 
 |Title|Description|Default|
 |---|---|---|
+Job: Firmware|Target firmware (marlin 2.0 or Repetir 1.0.3 / GRBL 1.1).|**Marlin**|
 Job: Travel Speed XY|High speed for travel movements X & Y (mm/min).|**2500 mm/min**|
 Job: Travel Speed Z|High speed for travel movements Z (mm/min).|**300 mm/min**|
 Job: Manual Spindle On/Off|Set it to true when the motor of your spindle is controlled by manual switch. So the preprocessor will issue additional pauses for TURN ON/TURN OFF the motor.|**true**|
@@ -31,8 +32,13 @@ Job: Use Arcs|Use G2/G3 g-codes fo circular movements.|**true**|
 Job: Reset on start (G92)|Set origin when gcode start (G92 X0 Y0 Z0). Only apply if not using gcodeStartFile.|**true**|
 Job: Goto 0 at end|Go X0 Y0 at gcode end. Useful to find if your machine loss steeps or have any other mechanic issue (like loose pulleys). Also useful for repetitive jobs. Only apply if not using gcodeStopFile.|**true**|
 Job: Use Arcs|Use G2/G3 g-codes fo circular movements.|**true**|
-Job: Enforce feedrate|Add feedrate to each movement g-code.|**false**|
-  
+Job: Marlin: Enforce feedrate|Add feedrate to each movement g-code.|**false**|
+Job: Line numbers|Show sequence numbers.|**false**|
+Job: Line start|First sequence number.|**10**|
+Job: Line increment|Increment for sequence numbers.|**1**|
+Job: Separate words|Specifies that the words should be separated with a white space.|**true**|
+
+
 ## Group 2: Tool change
 
 |Title|Description|Default|
@@ -56,12 +62,14 @@ Probe: G38 speed|Probing with speed|**30**|
 
 ## Group 4: Laser/Plasma related
 
-|Title|Description|Default|
+|Title|Description|Default|Values|
 |---|---|---|
-Laser: On - Vaporize|GCode command to turn on the laser/plasma cutter in vaporize mode|**M106 S255**|
-Laser: On - Through|GCode command to turn on the laser/plasma cutter in through mode|**M106 S200**|
-Laser: On - Etch|GCode command to turn on the laser/plasma cutter in etch mode|**M106 S100**|
-Laser: Off|Gcode command to turn off the laser/plasma cutter|**M107**|
+Laser: On - Vaporize|Persent of power to turn on the laser/plasma cutter in vaporize mode|**100**||
+Laser: On - Through|Persent of power to turn on the laser/plasma cutter in through mode|**80**||
+Laser: On - Etch|Persent of power to turn on the laser/plasma cutter in etch mode|**40**||
+Laser: Marlin mode|Marlin mode of the laser/plasma cutter ()|**M106**|M106 S{PWM}/M107 = 0; M3 O{PWM}/M5 = 1; M42 P{pin} S{PWM} = 2|
+Laser: Marlin pin|Marlin custom pin number for the laser/plasma cutter|**4**||
+Laser: GRBL mode|GRBL mode of the laser/plasma cutter|**M4**|M4 S{PWM}/M5 dynamic power = 4; M3 S{PWM}/M5 static power = 3|
 
 ## Group 5: Override behaviour by external files
 
@@ -78,11 +86,13 @@ Extern: Probe File|File with custom Gcode for tool probe (in nc folder)||
 |Title|Description|Default|Values|
 |---|---|---|---|
 Coolant: A Mode|Enable issuing g-codes for control Coolant channel A|**0**|off=0; flood=1; mist=2; throughTool=3; air=4; airThroughTool=5; suction=6; floodMist=7; floodThroughTool=8|
-Coolant: A On command|GCode command to turn on Coolant channel A|**M42 P11 S255**||
-Coolant: A Off command|Gcode command to turn off Coolant A|**M42 P11 S0"**||
+Coolant: A Marlin On command|GCode command to turn on Coolant channel A|**M42 P11 S255**||
+Coolant: A Marlin Off command|Gcode command to turn off Coolant A|**M42 P11 S0**||
+Coolant: A GRBL|GRBL g-codes for control Coolant channel A|**M7**|M7 flood = 7; M8 mist = 8|
 Coolant: B Mode|Enable issuing g-codes for control Coolant channel B|**0**|off=0; flood=1; mist=2; throughTool=3; air=4; airThroughTool=5; suction=6; floodMist=7; floodThroughTool=8|
-Coolant: B On command|GCode command to turn on Coolant channel B|**M42 P6 S255"**||
-Coolant: B Off command|Gcode command to turn off Coolant channel B|**M42 P6 S0"**||
+Coolant: B Marlin On command|GCode command to turn on Coolant channel B|**M42 P6 S255**||
+Coolant: B Marlin Off command|Gcode command to turn off Coolant channel B|**M42 P6 S0**||
+Coolant: B GRBL|GRBL g-codes for control Coolant channel B|**M8**|M7 flood = 7; M8 mist = 8|
 
 ## Group 7: Write comments into g-code
 

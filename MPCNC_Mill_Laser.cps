@@ -749,7 +749,7 @@ function setSpindeSpeed(_spindleSpeed, _clockwise) {
 
   if (currentSpindleSpeed != _spindleSpeed) {
     if (_spindleSpeed > 0) {
-      if (properties.jobManualSpindlePowerControl) {
+      if (properties.jobManualSpindlePowerControl && jobfirmwares.Marlin==properties.jobFirmware) {
         writeBlock(mFormat.format(0), " Turn ON " + speedFormat.format(_rpm) + "RPM");
       } else {
         var s = sOutput.format(spindleSpeed);
@@ -761,7 +761,7 @@ function setSpindeSpeed(_spindleSpeed, _clockwise) {
         }
       }
     } else {
-      if (properties.jobManualSpindlePowerControl) {
+      if (properties.jobManualSpindlePowerControl && jobfirmwares.Marlin==properties.jobFirmware) {
         do_beep(300, 3000);
         writeBlock(mFormat.format(0), " Turn OFF spindle");
       } else {

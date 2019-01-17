@@ -448,10 +448,10 @@ function onClose() {
   flushMotionQueue();
   if (properties.gcodeStopFile == "") {
     onCommand(COMMAND_COOLANT_OFF);
-    onCommand(COMMAND_STOP_SPINDLE);
     if (properties.jobGoOriginOnFinish) {
       rapidMovementsXY(0, 0);
     }
+    onCommand(COMMAND_STOP_SPINDLE);
 
     switch (properties.jobFirmware) {
       case jobfirmwares.Marlin:
@@ -770,6 +770,7 @@ function setSpindeSpeed(_spindleSpeed, _clockwise) {
       }
     } else {
       if (properties.jobManualSpindlePowerControl) {
+        do_beep(300, 3000);
         writeBlock(mFormat.format(0), " Turn OFF spindle");
       } else {
         writeBlock(mFormat.format(5));
@@ -1001,7 +1002,6 @@ function circularMovements(_clockwise, _cx, _cy, _cz, _x, _y, _z, _feed) {
   return;
 }
 
-
 // Tool change
 function toolChangeMarlin() {
   flushMotionQueue();
@@ -1010,8 +1010,10 @@ function toolChangeMarlin() {
   // turn off spindle and coolant
   onCommand(COMMAND_COOLANT_OFF);
   onCommand(COMMAND_STOP_SPINDLE);
-  // Beep
-  do_beep(400, 2000);
+  if (!properties.jobManualSpindlePowerControl) {
+    // Beep
+    do_beep(400, 2000);
+  }
 
   // Disable Z stepper
   if (properties.toolChangeDisableZStepper) {

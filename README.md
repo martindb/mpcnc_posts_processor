@@ -63,13 +63,13 @@ Probe: G38 speed|Probing with speed|**30**|
 ## Group 4: Laser/Plasma related
 
 |Title|Description|Default|Values|
-|---|---|---||
+|---|---|---|---|
 Laser: On - Vaporize|Persent of power to turn on the laser/plasma cutter in vaporize mode|**100**||
 Laser: On - Through|Persent of power to turn on the laser/plasma cutter in through mode|**80**||
 Laser: On - Etch|Persent of power to turn on the laser/plasma cutter in etch mode|**40**||
-Laser: Marlin mode|Marlin mode of the laser/plasma cutter ()|**M106**|M106 S{PWM}/M107 = 0; M3 O{PWM}/M5 = 1; M42 P{pin} S{PWM} = 2|
+Laser: Marlin mode|Marlin mode of the laser/plasma cutter ()|**M106**|M106 S{PWM}/M107 = 0; M3 O{PWM}/M5 = 1; M42 P{pin} S{PWM} = 2;|
 Laser: Marlin pin|Marlin custom pin number for the laser/plasma cutter|**4**||
-Laser: GRBL mode|GRBL mode of the laser/plasma cutter|**M4**|M4 S{PWM}/M5 dynamic power = 4; M3 S{PWM}/M5 static power = 3|
+Laser: GRBL mode|GRBL mode of the laser/plasma cutter|**M4**|M4 S{PWM}/M5 dynamic power = 4; M3 S{PWM}/M5 static power = 3;|
 
 ## Group 5: Override behaviour by external files
 

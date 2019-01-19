@@ -47,7 +47,7 @@ properties = {
   cutterOnVaporize: 100,            // Persent of power to turn on the laser/plasma cutter in vaporize mode
   cutterOnThrough: 80,              // Persent of power to turn on the laser/plasma cutter in through mode
   cutterOnEtch: 40,                 // Persent of power to turn on the laser/plasma cutter in etch mode
-  cutterMarlinMode: 0,              // Marlin mode laser/plasma cutter
+  cutterMarlinMode: 106,              // Marlin mode laser/plasma cutter
   cutterMarlinPin: 4,               // Marlin laser/plasma cutter pin for M42
   cutterGrblMode: 4,                // GRBL mode laser/plasma cutter
 
@@ -186,11 +186,11 @@ propertyDefinitions = {
   },
   cutterMarlinMode: {
     title: "Laser: Marlin mode", description: "Marlin mode of the laser/plasma cutter", group: 4,
-    type: "integer", default_mm: 0, default_in: 0,
+    type: "integer", default_mm: 106, default_in: 106,
     values: [
-      { title: "M106 S{PWM}/M107", id: 0 },
-      { title: "M3 O{PWM}/M5", id: 1 },
-      { title: "M42 P{pin} S{PWM}", id: 2 },
+      { title: "M106 S{PWM}/M107", id: 106 },
+      { title: "M3 O{PWM}/M5", id: 3 },
+      { title: "M42 P{pin} S{PWM}", id: 42 },
     ]
   },
   cutterMarlinPin: {
@@ -308,11 +308,6 @@ propertyDefinitions = {
 
 };
 
-var jobfirmwares = {
-  Marlin: 0,
-  GRBL: 1,
-};
-
 // Internal properties
 certificationLevel = 2;
 extension = "gcode";
@@ -393,49 +388,261 @@ function writeBlock() {
   }
 }
 
-function flushMotionQueue() {
-  switch (properties.jobFirmware) {
-    case jobfirmwares.Marlin:
-      writeBlock(mFormat.format(400));
-      break;
-    case jobfirmwares.GRBL:
-      break;
-  }
-}
-
-function do_beep(freq, period) {
-  switch (properties.jobFirmware) {
-    case jobfirmwares.Marlin:
-      writeBlock(mFormat.format(300), sFormat.format(freq), pFormat.format(period));
-      break;
-    case jobfirmwares.GRBL:
-      break;
-  }
-}
-function display_text(txt) {
-  switch (properties.jobFirmware) {
-    case jobfirmwares.Marlin:
-      writeBlock(mFormat.format(117), txt);
-      break;
-    case jobfirmwares.GRBL:
-      break;
-  }
-}
-
-// Called in every new gcode file
-function onOpen() {
-  switch (properties.jobFirmware) {
-    case jobfirmwares.Marlin:
+var firmwares={
+  marlin:{
+    init:function(){
       gMotionModal = createModal({ force: true }, gFormat); // modal group 1 // G0-G3, ...
       if (properties.jobMarlinEnforceFeedrate) {
         fOutput = createVariable({ force: true }, fFormat);
       }
-      break;
-    case jobfirmwares.GRBL:
+    },
+    start:function()
+    {
+      writeBlock(gAbsIncModal.format(90)); // Set to Absolute Positioning
+      writeBlock(gUnitModal.format(unit == IN ? 20 : 21));
+      writeBlock(mFormat.format(84), sFormat.format(0)); // Disable steppers timeout
+      if (properties.jobSetOriginOnStart) {
+        writeBlock(gFormat.format(92), xFormat.format(0), yFormat.format(0), zFormat.format(0)); // Set origin to initial position
+      }
+      if (properties.probeOnStart && tool.number != 0) {
+        onCommand(COMMAND_TOOL_MEASURE);
+      }
+    },
+    end:function(){
+      this.display_text(" Job end");
+    },
+    close:function(){
+    },
+    comment:function(text) {
+      writeln(";" + String(text).replace(/[\(\)]/g, ""));
+    },
+    flushMotions:function() {
+      writeBlock(mFormat.format(400));
+    },
+    spindleEnabled: true,
+    spindleOn: function (_spindleSpeed, _clockwise) {
+      if (properties.jobManualSpindlePowerControl) {
+        // for manual any positive input speed assumed as enabled. so it's just a flag
+        if (!this.spindleEnabled) {
+          writeBlock(mFormat.format(0), " Turn ON " + speedFormat.format(_spindleSpeed) + "RPM");
+        }
+      } else {
+        writeActivityComment(" >>> Spindle Speed " + speedFormat.format(_spindleSpeed));
+        writeBlock(mFormat.format(_clockwise ? 3 : 4), sOutput.format(spindleSpeed));
+      }
+      this.spindleEnabled = true;
+    },
+    spindleOff: function () {
+      if (properties.jobManualSpindlePowerControl) {
+        writeBlock(mFormat.format(300), sFormat.format(300), pFormat.format(3000));
+        writeBlock(mFormat.format(0), " Turn OFF spindle");
+      } else {
+        writeBlock(mFormat.format(5));
+      }
+      this.spindleEnabled = true;
+    },
+    laserOn:function(power){
+      var laser_pwm = power / 100 * 255;
+      switch (properties.cutterMarlinMode) {
+        case 106:
+          writeBlock(mFormat.format(106), sFormat.format(laser_pwm));
+          break;
+        case 3:
+          writeBlock(mFormat.format(3), oFormat.format(laser_pwm));
+          break;
+        case 42:
+          writeBlock(mFormat.format(42), pFormat.format(properties.cutterMarlinPin), sFormat.format(laser_pwm));
+          break;
+      }
+    },
+    laserOff: function () {
+      switch (properties.cutterMarlinMode) {
+        case 106:
+          writeBlock(mFormat.format(107));
+          break;
+        case 3:
+          writeBlock(mFormat.format(5));
+          break;
+        case 42:
+          writeBlock(mFormat.format(42), pFormat.format(properties.cutterMarlinPin), sFormat.format(0));
+          break;
+      }
+    },
+    coolantA:function(on){
+      writeBlock(on ? properties.coolantAMarlinOn : properties.coolantAMarlinOff);
+    },
+    coolantB:function(on){
+      writeBlock(on ? properties.coolantBMarlinOn : roperties.coolantBMarlinOff);
+    },
+    dwell:function (seconds) {
+      writeBlock(gFormat.format(4), "S" + secFormat.format(seconds));
+    },
+    display_text:function(txt) {
+      writeBlock(mFormat.format(117), txt);
+    },
+    circular: function (clockwise, cx, cy, cz, x, y, z, feed) {
+      if (!properties.jobUseArcs) {
+        linearize(tolerance);
+        return;
+      }
+      // Marlin supports arcs only on XY plane
+      var start = getCurrentPosition();
+      if (isFullCircle()) {
+        if (isHelical()) {
+          linearize(tolerance);
+          return;
+        }
+        switch (getCircularPlane()) {
+          case PLANE_XY:
+            writeBlock(gMotionModal.format(clockwise ? 2 : 3), xOutput.format(x), iOutput.format(cx - start.x, 0), jOutput.format(cy - start.y, 0), fOutput.format(feed));
+            break;
+          default:
+            linearize(tolerance);
+        }
+      } else {
+        switch (getCircularPlane()) {
+          case PLANE_XY:
+            writeBlock(gMotionModal.format(clockwise ? 2 : 3), xOutput.format(x), yOutput.format(y), zOutput.format(z), iOutput.format(cx - start.x, 0), jOutput.format(cy - start.y, 0), fOutput.format(feed));
+            break;
+          default:
+            linearize(tolerance);
+        }
+      }
+    },
+    toolChange:function () {
+      this.flushMotions();
+      // Go to tool change position
+      onRapid(propertyMmToUnit(properties.toolChangeX), propertyMmToUnit(properties.toolChangeY), propertyMmToUnit(properties.toolChangeZ));
+      // turn off spindle and coolant
+      onCommand(COMMAND_COOLANT_OFF);
+      onCommand(COMMAND_STOP_SPINDLE);
+      if (!properties.jobManualSpindlePowerControl) {
+        // Beep
+        writeBlock(mFormat.format(300), sFormat.format(400), pFormat.format(2000));
+      }
+    
+      // Disable Z stepper
+      if (properties.toolChangeDisableZStepper) {
+        writeBlock(mFormat.format(0), " Z Stepper will disabled. Wait for STOP!!");
+        writeBlock(mFormat.format(17), 'Z'); // Disable steppers timeout
+      }
+      // Ask tool change and wait user to touch lcd button
+      writeBlock(mFormat.format(0), " Tool " + tool.number + " " + tool.comment);
+    
+      // Run Z probe gcode
+      if (properties.toolChangeZProbe && tool.number != 0) {
+        onCommand(COMMAND_TOOL_MEASURE);
+      }
+    }
+  },
+  grbl:
+  {
+    init:function(){
       gMotionModal = createModal({}, gFormat); // modal group 1 // G0-G3, ...
       writeln("%");
-      break;
+    },
+    start:function()
+    {
+      writeBlock(gAbsIncModal.format(90)); // Set to Absolute Positioning
+      writeBlock(gFeedModeModal.format(94));
+      writeBlock(gPlaneModal.format(17));
+      writeBlock(gUnitModal.format(unit ==IN ? 20 : 21)); 
+    },
+    end:function(){
+      writeBlock(mFormat.format(30));
+    },
+    close:function(){
+      writeln("%");
+    },
+    comment:function(text) {
+      writeln("(" + String(text).replace(/[\(\)]/g, "") + ")");
+    },
+    flushMotions:function() {
+    },
+    spindleOn:function(_spindleSpeed, _clockwise){
+      writeActivityComment(" >>> Spindle Speed " + speedFormat.format(_spindleSpeed));
+      writeBlock(mFormat.format(_clockwise ? 3 : 4), sOutput.format(spindleSpeed));
+    },
+    spindleOff:function() {
+      writeBlock(mFormat.format(5));
+    },
+    laserOn:function(power){
+      var laser_pwm = power / 100 * 255;
+      writeBlock(mFormat.format(properties.cutterGrblMode), sFormat.format(laser_pwm));
+    },
+    laserOff:function(){
+      writeBlock(mFormat.format(5));
+    },
+    coolantA:function(on){
+      writeBlock(mFormat.format(on ? properties.coolantAGrbl : 9));
+    },
+    coolantB:function(on){
+      writeBlock(mFormat.format(on ? properties.coolantBGrbl: 9));
+    },
+    dwell:function(seconds) {
+      seconds = clamp(0.001, seconds, 99999.999);
+      writeBlock(gFormat.format(4), "P" + secFormat.format(seconds));
+    },    
+    display_text:function(txt) {
+    },
+    circular: function (clockwise, cx, cy, cz, x, y, z, feed) {
+      var start = getCurrentPosition();
+
+      if (isFullCircle()) {
+        if (isHelical()) {
+          linearize(tolerance);
+          return;
+        }
+        switch (getCircularPlane()) {
+          case PLANE_XY:
+            writeBlock(gPlaneModal.format(17), gMotionModal.format(clockwise ? 2 : 3), xOutput.format(x), iOutput.format(cx - start.x, 0), jOutput.format(cy - start.y, 0), fOutput.format(feed));
+            break;
+          case PLANE_ZX:
+            writeBlock(gPlaneModal.format(18), gMotionModal.format(clockwise ? 2 : 3), zOutput.format(z), iOutput.format(cx - start.x, 0), kOutput.format(cz - start.z, 0), fOutput.format(feed));
+            break;
+          case PLANE_YZ:
+            writeBlock(gPlaneModal.format(19), gMotionModal.format(clockwise ? 2 : 3), yOutput.format(y), jOutput.format(cy - start.y, 0), kOutput.format(cz - start.z, 0), fOutput.format(feed));
+            break;
+          default:
+            linearize(tolerance);
+        }
+      } else {
+        switch (getCircularPlane()) {
+          case PLANE_XY:
+            writeBlock(gPlaneModal.format(17), gMotionModal.format(clockwise ? 2 : 3), xOutput.format(x), yOutput.format(y), zOutput.format(z), iOutput.format(cx - start.x, 0), jOutput.format(cy - start.y, 0), fOutput.format(feed));
+            break;
+          case PLANE_ZX:
+            writeBlock(gPlaneModal.format(18), gMotionModal.format(clockwise ? 2 : 3), xOutput.format(x), yOutput.format(y), zOutput.format(z), iOutput.format(cx - start.x, 0), kOutput.format(cz - start.z, 0), fOutput.format(feed));
+            break;
+          case PLANE_YZ:
+            writeBlock(gPlaneModal.format(19), gMotionModal.format(clockwise ? 2 : 3), xOutput.format(x), yOutput.format(y), zOutput.format(z), jOutput.format(cy - start.y, 0), kOutput.format(cz - start.z, 0), fOutput.format(feed));
+            break;
+          default:
+            linearize(tolerance);
+        }
+      }
+    },
+    toolChange:function () {
+      writeBlock(mFormat.format(6), tFormat.format(tool.number));
+      writeBlock(gFormat.format(54));
+    }
   }
+}
+
+var currentFirmware;
+
+// Called in every new gcode file
+function onOpen() {
+  switch (properties.jobFirmware) {
+    case 0:
+      currentFirmware=firmwares.marlin;
+      break;
+    case 1:
+      currentFirmware=firmwares.grbl;
+    break;
+  }
+  currentFirmware.init();
+
   sequenceNumber = properties.jobSequenceNumberStart;
   if (!properties.jobSeparateWordsWithSpace) {
     setWordSeparator("");
@@ -445,32 +652,19 @@ function onOpen() {
 // Called at end of gcode file
 function onClose() {
   writeActivityComment(" *** STOP begin ***");
-  flushMotionQueue();
+  currentFirmware.flushMotions();
   if (properties.gcodeStopFile == "") {
     onCommand(COMMAND_COOLANT_OFF);
     if (properties.jobGoOriginOnFinish) {
       rapidMovementsXY(0, 0);
     }
     onCommand(COMMAND_STOP_SPINDLE);
-
-    switch (properties.jobFirmware) {
-      case jobfirmwares.Marlin:
-        display_text(" Job end");
-        break;
-      case jobfirmwares.GRBL:
-        writeBlock(mFormat.format(30));
-        break;
-    }
-
+    currentFirmware.end();
     writeActivityComment(" *** STOP end ***");
   } else {
     loadFile(properties.gcodeStopFile);
   }
-  switch (properties.jobFirmware) {
-    case jobfirmwares.GRBL:
-      writeln("%");
-      break;
-  }
+  currentFirmware.close();
 }
 
 // Misc variables
@@ -523,11 +717,11 @@ function onSection() {
     writeComment(" Z Min: " + xyzFormat.format(currentSection.getGlobalZRange().getMinimum()) + " - Z Max: " + xyzFormat.format(currentSection.getGlobalZRange().getMaximum()));
   }
 
-  flushMotionQueue();
+  currentFirmware.flushMotions();
   onCommand(COMMAND_START_SPINDLE);
   onCommand(COMMAND_COOLANT_ON);
   // Display section name in LCD
-  display_text(" " + sectionComment);
+  currentFirmware.display_text(" " + sectionComment);
   return;
 }
 
@@ -546,6 +740,11 @@ function onComment(message) {
   writeComment(message);
 }
 
+var pendingRadiusCompensation = RADIUS_COMPENSATION_OFF;
+
+function onRadiusCompensation() {
+  pendingRadiusCompensation = radiusCompensation;
+}
 // Rapid movements
 function onRapid(x, y, z) {
   rapidMovements(x, y, z);
@@ -558,80 +757,34 @@ function onLinear(x, y, z, feed) {
   return;
 }
 
+function onRapid5D(_x, _y, _z, _a, _b, _c) {
+  error(localize("Multi-axis motion is not supported."));
+}
+
+function onLinear5D(_x, _y, _z, _a, _b, _c, feed) {
+  error(localize("Multi-axis motion is not supported."));
+}
+
 function onCircular(clockwise, cx, cy, cz, x, y, z, feed) {
-  if (properties.jobUseArcs) {
-    circularMovements(clockwise, cx, cy, cz, x, y, z, feed);
-  } else {
-    linearize(tolerance);
+  if (pendingRadiusCompensation != RADIUS_COMPENSATION_OFF) {
+    error(localize("Radius compensation cannot be activated/deactivated for a circular move."));
+    return;
   }
+  currentFirmware.circular(clockwise, cx, cy, cz, x, y, z, feed)  
   return;
 }
 
 // Called on waterjet/plasma/laser cuts
 var powerState = false;
 
-var cutterMarlinModes = {
-  m106: 0,
-  m3: 1,
-  m42: 2,
-};
-var cutterGrblModes = {
-  m3: 3,
-  m4: 4,
-};
-
 function onPower(power) {
   if (power != powerState) {
     if (power) {
       writeActivityComment(" >>> LASER Power ON");
-      var laser_pwm = cutterOnCurrentPower / 100 * 255;
-
-      switch (properties.jobFirmware) {
-        case jobfirmwares.Marlin:
-          switch (properties.cutterMarlinMode) {
-            case cutterMarlinModes.m106:
-              writeBlock(mFormat.format(106), sFormat.format(laser_pwm));
-              break;
-            case cutterMarlinModes.m3:
-              writeBlock(mFormat.format(3), oFormat.format(laser_pwm));
-              break;
-            case cutterMarlinModes.m42:
-              writeBlock(mFormat.format(42), pFormat.format(properties.cutterMarlinPin), sFormat.format(laser_pwm));
-              break;
-          }
-          break;
-        case jobfirmwares.GRBL:
-          switch (properties.cutterGrblMode) {
-            case cutterGrblModes.m3:
-              writeBlock(mFormat.format(3), sFormat.format(laser_pwm));
-              break;
-            case cutterGrblModes.m4:
-              writeBlock(mFormat.format(4), sFormat.format(laser_pwm));
-              break;
-          }
-          break;
-      }
-
+      currentFirmware.laserOn(cutterOnCurrentPower);
     } else {
       writeActivityComment(" >>> LASER Power OFF");
-      switch (properties.jobFirmware) {
-        case jobfirmwares.Marlin:
-          switch (properties.cutterMarlinMode) {
-            case cutterMarlinModes.m106:
-              writeBlock(mFormat.format(107));
-              break;
-            case cutterMarlinModes.m3:
-              writeBlock(mFormat.format(5));
-              break;
-            case cutterMarlinModes.m42:
-              writeBlock(mFormat.format(42), pFormat.format(properties.cutterMarlinPin), sFormat.format(0));
-              break;
-          }
-          break;
-        case jobfirmwares.GRBL:
-          writeBlock(mFormat.format(5));
-          break;
-      }
+      currentFirmware.laserOff();
     }
     powerState = power;
   }
@@ -644,15 +797,7 @@ function onDwell(seconds) {
     warning(localize("Dwelling time is out of range."));
   }
   writeActivityComment(" >>> Dwell");
-  switch (properties.jobFirmware) {
-    case jobfirmwares.Marlin:
-      writeBlock(gFormat.format(4), "S" + secFormat.format(seconds));
-      break;
-    case jobfirmwares.GRBL:
-      seconds = clamp(0.001, seconds, 99999.999);
-      writeBlock(gFormat.format(4), "P" + secFormat.format(seconds));
-      break;
-  }
+  currentFirmware.dwell(seconds);
   return;
 }
 
@@ -742,31 +887,11 @@ function onMovement(movement) {
 var currentSpindleSpeed = 0;
 
 function setSpindeSpeed(_spindleSpeed, _clockwise) {
-  var _rpm = _spindleSpeed;
-  if (properties.jobManualSpindlePowerControl && _spindleSpeed > 0) {
-    _spindleSpeed = 1; // for manula any positive input speed assumed as enabled. so it's just a flag
-  }
-
   if (currentSpindleSpeed != _spindleSpeed) {
     if (_spindleSpeed > 0) {
-      if (properties.jobManualSpindlePowerControl && jobfirmwares.Marlin==properties.jobFirmware) {
-        writeBlock(mFormat.format(0), " Turn ON " + speedFormat.format(_rpm) + "RPM");
-      } else {
-        var s = sOutput.format(spindleSpeed);
-        writeActivityComment(" >>> Spindle Speed " + speedFormat.format(_spindleSpeed));
-        if (_clockwise) {
-          writeBlock(mFormat.format(3), s);
-        } else {
-          writeBlock(mFormat.format(4), s);
-        }
-      }
+      currentFirmware.spindleOn(_spindleSpeed, _clockwise);
     } else {
-      if (properties.jobManualSpindlePowerControl && jobfirmwares.Marlin==properties.jobFirmware) {
-        do_beep(300, 3000);
-        writeBlock(mFormat.format(0), " Turn OFF spindle");
-      } else {
-        writeBlock(mFormat.format(5));
-      }
+      currentFirmware.spindleOff();
     }
     currentSpindleSpeed = _spindleSpeed;
   }
@@ -820,17 +945,6 @@ function onCommand(command) {
   }
 }
 
-function handleMinMax(pair, range) {
-  var rmin = range.getMinimum();
-  var rmax = range.getMaximum();
-  if (pair.min == undefined || pair.min > rmin) {
-    pair.min = rmin;
-  }
-  if (pair.max == undefined || pair.min < rmin) {
-    pair.max = rmax;
-  }
-}
-
 function writeFirstSection() {
   // dump tool information
   var toolZRanges = {};
@@ -841,6 +955,17 @@ function writeFirstSection() {
     y: { min: undefined, max: undefined },
     z: { min: undefined, max: undefined },
   };
+  var handleMinMax = function(pair, range) {
+    var rmin = range.getMinimum();
+    var rmax = range.getMaximum();
+    if (pair.min == undefined || pair.min > rmin) {
+      pair.min = rmin;
+    }
+    if (pair.max == undefined || pair.min < rmin) {
+      pair.max = rmax;
+    }
+  }
+  
   var numberOfSections = getNumberOfSections();
   for (var i = 0; i < numberOfSections; ++i) {
     var section = getSection(i);
@@ -889,34 +1014,9 @@ function writeFirstSection() {
   writeActivityComment(" *** START begin ***");
 
   if (properties.gcodeStartFile == "") {
-
-    writeBlock(gAbsIncModal.format(90)); // Set to Absolute Positioning
-    if (jobfirmwares.GRBL == properties.jobFirmware) {
-      writeBlock(gFeedModeModal.format(94));
-      writeBlock(gPlaneModal.format(17));
-    }
-
-    switch (unit) {
-      case IN:
-        writeBlock(gUnitModal.format(20)); // Set Units to Inches
-        break;
-      case MM:
-        writeBlock(gUnitModal.format(21)); // Set Units to Millimeters
-        break;
-    }
-    if (jobfirmwares.Marlin == properties.jobFirmware) {
-      writeBlock(mFormat.format(84), sFormat.format(0)); // Disable steppers timeout
-      if (properties.jobSetOriginOnStart) {
-        writeBlock(gFormat.format(92), xFormat.format(0), yFormat.format(0), zFormat.format(0)); // Set origin to initial position
-      }
-    }
+    currentFirmware.start();
   } else {
     loadFile(properties.gcodeStartFile);
-  }
-  if (jobfirmwares.Marlin == properties.jobFirmware) {
-    if (properties.probeOnStart && tool.number != 0) {
-      onCommand(COMMAND_TOOL_MEASURE);
-    }
   }
   writeActivityComment(" *** START end ***");
   writeln("");
@@ -924,14 +1024,7 @@ function writeFirstSection() {
 
 // Output a comment
 function writeComment(text) {
-  switch (properties.jobFirmware) {
-    case jobfirmwares.Marlin:
-      writeln(";" + String(text).replace(/[\(\)]/g, ""));
-      break;
-    case jobfirmwares.GRBL:
-      writeln("(" + String(text).replace(/[\(\)]/g, "") + ")");
-      break;
-  }
+  currentFirmware.comment(text);
 }
 
 // Rapid movements with G1 and differentiated travel speeds for XY and Z
@@ -939,6 +1032,10 @@ function rapidMovementsXY(_x, _y) {
   var x = xOutput.format(_x);
   var y = yOutput.format(_y);
   if (x || y) {
+    if (pendingRadiusCompensation != RADIUS_COMPENSATION_OFF) {
+      error(localize("Radius compensation mode cannot be changed at rapid traversal."));
+      return;
+    }
     f = fOutput.format(propertyMmToUnit(properties.jobTravelSpeedXY));
     fOutput.reset();
     writeBlock(gMotionModal.format(0), x, y, f);
@@ -947,6 +1044,10 @@ function rapidMovementsXY(_x, _y) {
 function rapidMovementsZ(_z) {
   var z = zOutput.format(_z);
   if (z) {
+    if (pendingRadiusCompensation != RADIUS_COMPENSATION_OFF) {
+      error(localize("Radius compensation mode cannot be changed at rapid traversal."));
+      return;
+    }
     f = fOutput.format(propertyMmToUnit(properties.jobTravelSpeedZ));
     fOutput.reset();
     writeBlock(gMotionModal.format(0), z, f);
@@ -960,83 +1061,39 @@ function rapidMovements(_x, _y, _z) {
 
 // Linear movements
 function linearMovements(_x, _y, _z, _feed) {
+  if (pendingRadiusCompensation != RADIUS_COMPENSATION_OFF) {
+    // ensure that we end at desired position when compensation is turned off
+    xOutput.reset();
+    yOutput.reset();
+  }  
   var x = xOutput.format(_x);
   var y = yOutput.format(_y);
   var z = zOutput.format(_z);
   var f = fOutput.format(_feed);
   if (x || y || z) {
-    writeBlock(gMotionModal.format(1), x, y, z, f);
-  }
-  return;
-}
-
-// Circular movements
-function circularMovements(_clockwise, _cx, _cy, _cz, _x, _y, _z, _feed) {
-  // Marlin supports arcs only on XY plane
-  switch (getCircularPlane()) {
-    case PLANE_XY:
-      var x = xOutput.format(_x);
-      var y = yOutput.format(_y);
-      var f = fOutput.format(_feed);
-      var start = getCurrentPosition();
-      var i = iOutput.format(_cx - start.x, 0);
-      var j = jOutput.format(_cy - start.y, 0);
-
-      if (_clockwise) {
-        writeBlock(gMotionModal.format(2), x, y, i, j, f);
-      } else {
-        writeBlock(gMotionModal.format(3), x, y, i, j, f);
-      }
-      break;
-    default:
-      linearize(tolerance);
+    if (pendingRadiusCompensation != RADIUS_COMPENSATION_OFF) {
+      error(localize("Radius compensation mode is not supported."));
+      return;
+    } else {
+      writeBlock(gMotionModal.format(1), x, y, z, f);
+    }    
+  } else if (f) {
+    if (getNextRecord().isMotion()) { // try not to output feed without motion
+      feedOutput.reset(); // force feed on next line
+    } else {
+      writeBlock(gMotionModal.format(1), f);
+    }
   }
   return;
 }
 
 // Tool change
-function toolChangeMarlin() {
-  flushMotionQueue();
-  // Go to tool change position
-  onRapid(propertyMmToUnit(properties.toolChangeX), propertyMmToUnit(properties.toolChangeY), propertyMmToUnit(properties.toolChangeZ));
-  // turn off spindle and coolant
-  onCommand(COMMAND_COOLANT_OFF);
-  onCommand(COMMAND_STOP_SPINDLE);
-  if (!properties.jobManualSpindlePowerControl) {
-    // Beep
-    do_beep(400, 2000);
-  }
 
-  // Disable Z stepper
-  if (properties.toolChangeDisableZStepper) {
-    writeBlock(mFormat.format(0), " Z Stepper will disabled. Wait for STOP!!");
-    writeBlock(mFormat.format(17), 'Z'); // Disable steppers timeout
-  }
-
-  // Ask tool change and wait user to touch lcd button
-  writeBlock(mFormat.format(0), " Tool " + tool.number + " " + tool.comment);
-
-  // Run Z probe gcode
-  if (properties.toolChangeZProbe && tool.number != 0) {
-    onCommand(COMMAND_TOOL_MEASURE);
-  }
-}
-function toolChangeGrbl() {
-  writeBlock(mFormat.format(6), tFormat.format(tool.number));
-  writeBlock(gFormat.format(54));
-}
 function toolChange() {
   if (properties.gcodeToolFile == "") {
     // Builtin tool change gcode
     writeActivityComment(" --- CHANGE TOOL begin ---");
-    switch (properties.jobFirmware) {
-      case jobfirmwares.Marlin:
-        toolChangeMarlin();
-        break;
-      case jobfirmwares.GRBL:
-        toolChangeGrbl();
-        break;
-    }
+    currentFirmware.toolChange();
     writeActivityComment(" --- CHANGE TOOL end ---");
   } else {
     // Custom tool change gcode
@@ -1090,50 +1147,22 @@ function setCoolant(coolant) {
   if (currentCoolantMode == coolant) {
     return;
   }
-  if (properties.coolantA_Mode != 0 && properties.coolantAMarlinOn != "" && properties.coolantAMarlinOff != "") {
+  if (properties.coolantA_Mode != 0) {
     if (currentCoolantMode == properties.coolantA_Mode) {
       writeActivityComment(" >>> Coolant A OFF");
-      switch (properties.jobFirmware) {
-        case jobfirmwares.Marlin:
-          writeBlock(properties.coolantAMarlinOff);
-          break;
-        case jobfirmwares.GRBL:
-          writeBlock(mFormat.format(9));
-          break;
-      }
+      currentFirmware.coolantA(true);
     } else if (coolant == properties.coolantA_Mode) {
       writeActivityComment(" >>> Coolant A ON");
-      switch (properties.jobFirmware) {
-        case jobfirmwares.Marlin:
-          writeBlock(properties.coolantAMarlinOn);
-          break;
-        case jobfirmwares.GRBL:
-          writeBlock(mFormat.format(properties.coolantAGrbl));
-          break;
-      }
+      currentFirmware.coolantA(false);
     }
   }
-  if (properties.coolantB_Mode != 0 && properties.coolantBMarlinOn != "" && properties.coolantBMarlinOff != "") {
+  if (properties.coolantB_Mode != 0) {
     if (currentCoolantMode == properties.coolantB_Mode) {
       writeActivityComment(" >>> Coolant B OFF");
-      switch (properties.jobFirmware) {
-        case jobfirmwares.Marlin:
-          writeBlock(properties.coolantBMarlinOff);
-          break;
-        case jobfirmwares.GRBL:
-          writeBlock(mFormat.format(9));
-          break;
-      }
+      currentFirmware.coolantB(true);
     } else if (coolant == properties.coolantB_Mode) {
       writeActivityComment(" >>> Coolant B ON");
-      switch (properties.jobFirmware) {
-        case jobfirmwares.Marlin:
-          writeBlock(properties.coolantBMarlinOn);
-          break;
-        case jobfirmwares.GRBL:
-          writeBlock(mFormat.format(properties.coolantBGrbl));
-          break;
-      }
+      currentFirmware.coolantB(false);
     }
   }
   currentCoolantMode = coolant;

@@ -15,7 +15,7 @@ Some design points:
 - Setup operation types: Milling, Water/Laser/Plasma
 - Support MM and Inches units (**but all properties MUST be set in MM**)
 - XY and Z independent travel speeds. Rapids are done with G0.
-- Arcs support on XY plane
+- Arcs support on XY plane (Marlin/Repetier/RepRap) or all panes (Grbl)
 - Tested with LCD display and SD card (built in tool change require printing from SD and LCD to restart)
 - Support for 3 different laser power using "cutting modes" (through, etch, vaporize)
 - Support 2 coolant channels. You may attach relays to control external devices - as example air jet valve.

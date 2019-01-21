@@ -31,7 +31,7 @@ Some design points:
 
 |Title|Description|Default|
 |---|---|---|
-Job: Firmware|Target firmware (marlin 2.0 or Repetir 1.0.3 / GRBL 1.1).|**Marlin**|
+Job: Firmware|Target firmware (marlin 2.0 or Repetir 1.0.3 / GRBL 1.1) / RepRap Firmware.|**Marlin**|
 Job: Travel Speed XY|High speed for travel movements X & Y (mm/min).|**2500 mm/min**|
 Job: Travel Speed Z|High speed for travel movements Z (mm/min).|**300 mm/min**|
 Job: Marlin: Manual Spindle On/Off|Set it to true when the motor of your spindle is controlled by manual switch. So the preprocessor will issue additional pauses for TURN ON/TURN OFF the motor.|**true**|

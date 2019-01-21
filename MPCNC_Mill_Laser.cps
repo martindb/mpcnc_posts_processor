@@ -26,6 +26,10 @@ properties = {
   jobSequenceNumberIncrement: 1,       // increment for sequence numbers
   jobSeparateWordsWithSpace: true,     // specifies that the words should be separated with a white space  
 
+  jobDuetMillingMode: "M453 P2 I0 R30000 F200",  // GCode command to setup Duet3d milling mode
+  jobDuetLaserMode: "M452 P2 I0 R255 F200",  // GCode command to setup Duet3d laser mode
+
+
   toolChangeEnabled: true,          // Enable tool change code (bultin tool change requires LCD display)
   toolChangeX: 0,                   // X position for builtin tool change
   toolChangeY: 0,                   // Y position for builtin tool change
@@ -74,6 +78,7 @@ propertyDefinitions = {
     values: [
       { title: "Marlin 2.0/Repetier 1.0.3", id: 0 },
       { title: "GRBL 1.1", id: 1 },
+      { title: "RepRap firmware (Duet)", id: 2 },
     ]
   },
 
@@ -124,6 +129,14 @@ propertyDefinitions = {
   jobSeparateWordsWithSpace: {
     title: "Job: Separate words", description: "Specifies that the words should be separated with a white space", group: 1,
     type: "boolean", default_mm: true, default_in: true
+  },
+  jobDuetMillingMode: {
+    title: "Job: Duet: Milling mode", description: "GCode command to setup Duet3d milling mode", group: 1, type: "string",
+    default_mm: "M453 P2 I0 R30000 F200", default_in: "M453 P2 I0 R30000 F200"
+  },
+  jobDuetLaserMode: {
+    title: "Job: Duet: Laser mode", description: "GCode command to setup Duet3d laser mode", group: 1, type: "string",
+    default_mm: "M452 P2 I0 R255 F200", default_in: "M452 P2 I0 R255 F200"
   },
 
   toolChangeEnabled: {
@@ -185,7 +198,7 @@ propertyDefinitions = {
     type: "number", default_mm: 40, default_in: 40
   },
   cutterMarlinMode: {
-    title: "Laser: Marlin mode", description: "Marlin mode of the laser/plasma cutter", group: 4,
+    title: "Laser: Marlin/Reprap mode", description: "Marlin/Reprar mode of the laser/plasma cutter", group: 4,
     type: "integer", default_mm: 106, default_in: 106,
     values: [
       { title: "M106 S{PWM}/M107", id: 106 },
@@ -389,21 +402,26 @@ function writeBlock() {
 }
 
 function FirmwareBase() {
+  this.machineMode = undefined; //TYPE_MILLING, TYPE_JET
 }
 
-function FirmwareMarlin() {
+FirmwareBase.prototype.section = function () {
+  this.machineMode = currentSection.type;
+}
+
+function FirmwareMarlinLike() {
   FirmwareBase.apply(this, arguments);
   this.spindleEnabled= false;
 }
-FirmwareMarlin.prototype = Object.create(FirmwareBase.prototype);
-FirmwareMarlin.prototype.constructor = FirmwareMarlin;
-FirmwareMarlin.prototype.init = function () {
+FirmwareMarlinLike.prototype = Object.create(FirmwareBase.prototype);
+FirmwareMarlinLike.prototype.constructor = FirmwareMarlinLike;
+FirmwareMarlinLike.prototype.init = function () {
   gMotionModal = createModal({ force: true }, gFormat); // modal group 1 // G0-G3, ...
   if (properties.jobMarlinEnforceFeedrate) {
     fOutput = createVariable({ force: true }, fFormat);
   }
 }
-FirmwareMarlin.prototype.start = function () {
+FirmwareMarlinLike.prototype.start = function () {
   writeBlock(gAbsIncModal.format(90)); // Set to Absolute Positioning
   writeBlock(gUnitModal.format(unit == IN ? 20 : 21));
   writeBlock(mFormat.format(84), sFormat.format(0)); // Disable steppers timeout
@@ -414,22 +432,22 @@ FirmwareMarlin.prototype.start = function () {
     onCommand(COMMAND_TOOL_MEASURE);
   }
 }
-FirmwareMarlin.prototype.end = function () {
+FirmwareMarlinLike.prototype.end = function () {
   this.display_text(" Job end");
 }
-FirmwareMarlin.prototype.close = function () {
+FirmwareMarlinLike.prototype.close = function () {
 }
-FirmwareMarlin.prototype.comment = function (text) {
+FirmwareMarlinLike.prototype.comment = function (text) {
   writeln(";" + String(text).replace(/[\(\)]/g, ""));
 }
-FirmwareMarlin.prototype.flushMotions = function () {
+FirmwareMarlinLike.prototype.flushMotions = function () {
   writeBlock(mFormat.format(400));
 }
-FirmwareMarlin.prototype.spindleOn = function (_spindleSpeed, _clockwise) {
+FirmwareMarlinLike.prototype.spindleOn = function (_spindleSpeed, _clockwise) {
   if (properties.jobManualSpindlePowerControl) {
     // for manual any positive input speed assumed as enabled. so it's just a flag
     if (!this.spindleEnabled) {
-      writeBlock(mFormat.format(0), " Turn ON " + speedFormat.format(_spindleSpeed) + "RPM");
+      this.askUser("Turn ON " + speedFormat.format(_spindleSpeed) + "RPM", "Spindle", false);
     }
   } else {
     writeActivityComment(" >>> Spindle Speed " + speedFormat.format(_spindleSpeed));
@@ -437,16 +455,16 @@ FirmwareMarlin.prototype.spindleOn = function (_spindleSpeed, _clockwise) {
   }
   this.spindleEnabled = true;
 }
-FirmwareMarlin.prototype.spindleOff = function () {
+FirmwareMarlinLike.prototype.spindleOff = function () {
   if (properties.jobManualSpindlePowerControl) {
     writeBlock(mFormat.format(300), sFormat.format(300), pFormat.format(3000));
-    writeBlock(mFormat.format(0), " Turn OFF spindle");
+    this.askUser("Turn OFF spindle", "Spindle", false);
   } else {
     writeBlock(mFormat.format(5));
   }
   this.spindleEnabled = true;
 }
-FirmwareMarlin.prototype.laserOn = function (power) {
+FirmwareMarlinLike.prototype.laserOn = function (power) {
   var laser_pwm = power / 100 * 255;
   switch (properties.cutterMarlinMode) {
     case 106:
@@ -460,7 +478,7 @@ FirmwareMarlin.prototype.laserOn = function (power) {
       break;
   }
 }
-FirmwareMarlin.prototype.laserOff = function () {
+FirmwareMarlinLike.prototype.laserOff = function () {
   switch (properties.cutterMarlinMode) {
     case 106:
       writeBlock(mFormat.format(107));
@@ -473,19 +491,19 @@ FirmwareMarlin.prototype.laserOff = function () {
       break;
   }
 }
-FirmwareMarlin.prototype.coolantA = function (on) {
+FirmwareMarlinLike.prototype.coolantA = function (on) {
   writeBlock(on ? properties.coolantAMarlinOn : properties.coolantAMarlinOff);
 }
-FirmwareMarlin.prototype.coolantB = function (on) {
+FirmwareMarlinLike.prototype.coolantB = function (on) {
   writeBlock(on ? properties.coolantBMarlinOn : roperties.coolantBMarlinOff);
 }
-FirmwareMarlin.prototype.dwell = function (seconds) {
+FirmwareMarlinLike.prototype.dwell = function (seconds) {
   writeBlock(gFormat.format(4), "S" + secFormat.format(seconds));
 }
-FirmwareMarlin.prototype.display_text = function (txt) {
+FirmwareMarlinLike.prototype.display_text = function (txt) {
   writeBlock(mFormat.format(117), txt);
 }
-FirmwareMarlin.prototype.circular = function (clockwise, cx, cy, cz, x, y, z, feed) {
+FirmwareMarlinLike.prototype.circular = function (clockwise, cx, cy, cz, x, y, z, feed) {
   if (!properties.jobUseArcs) {
     linearize(tolerance);
     return;
@@ -514,7 +532,12 @@ FirmwareMarlin.prototype.circular = function (clockwise, cx, cy, cz, x, y, z, fe
     }
   }
 }
-FirmwareMarlin.prototype.toolChange = function () {
+
+FirmwareMarlinLike.prototype.askUser = function (text, title, allowJog) {
+  writeBlock(mFormat.format(0), " " + text);
+}
+
+FirmwareMarlinLike.prototype.toolChange = function () {
   this.flushMotions();
   // Go to tool change position
   onRapid(propertyMmToUnit(properties.toolChangeX), propertyMmToUnit(properties.toolChangeY), propertyMmToUnit(properties.toolChangeZ));
@@ -528,16 +551,71 @@ FirmwareMarlin.prototype.toolChange = function () {
 
   // Disable Z stepper
   if (properties.toolChangeDisableZStepper) {
-    writeBlock(mFormat.format(0), " Z Stepper will disabled. Wait for STOP!!");
+    this.askUser("Z Stepper will disabled. Wait for STOP!!", "Tool change", false);
     writeBlock(mFormat.format(17), 'Z'); // Disable steppers timeout
   }
   // Ask tool change and wait user to touch lcd button
-  writeBlock(mFormat.format(0), " Tool " + tool.number + " " + tool.comment);
+  this.askUser("Tool " + tool.number + " " + tool.comment, "Tool change", true);
 
   // Run Z probe gcode
   if (properties.toolChangeZProbe && tool.number != 0) {
     onCommand(COMMAND_TOOL_MEASURE);
   }
+}
+FirmwareMarlinLike.prototype.probeTool = function () {
+  this.askUser("Attach ZProbe", "Probe", false);
+  // refer http://marlinfw.org/docs/gcode/G038.html
+  if (properties.probeUseHomeZ) {
+    writeBlock(gFormat.format(28), 'Z');
+  } else {
+    writeBlock(gMotionModal.format(38.3), fFormat.format(propertyMmToUnit(properties.probeG38Speed)), zFormat.format(propertyMmToUnit(properties.probeG38Target)));
+  }
+  writeBlock(gFormat.format(92), zFormat.format(propertyMmToUnit(properties.probeThickness))); // Set origin to initial position
+  if (properties.toolChangeZ != "") { // move up tool to safe height again after probing
+    rapidMovementsZ(propertyMmToUnit(properties.toolChangeZ));
+  }
+  this.askUser("Detach ZProbe", "Probe", false);
+}
+
+
+function FirmwareMarlin20() {
+  FirmwareMarlinLike.apply(this, arguments);
+}
+FirmwareMarlin20.prototype = Object.create(FirmwareMarlinLike.prototype);
+FirmwareMarlin20.prototype.constructor = FirmwareMarlin20;
+
+function FirmwareRepRap() {
+  FirmwareMarlinLike.apply(this, arguments);
+}
+FirmwareRepRap.prototype = Object.create(FirmwareMarlinLike.prototype);
+FirmwareRepRap.prototype.constructor = FirmwareRepRap;
+FirmwareRepRap.prototype.askUser = function (text, title, allowJog) {
+  var v1 = " P\"" + text + "\" R\"" + title + "\" S3";
+  var v2 = allowJog ? " X1 Y1 Z1" : "";
+  writeBlock(mFormat.format(291), v1 + v2);
+}
+FirmwareRepRap.prototype.section = function () {
+  if(this.machineMode != currentSection.type)
+  {
+    switch (currentSection.type) {
+      case TYPE_MILLING:
+        writeBlock(properties.jobDuetMillingMode);
+        break;
+      case TYPE_JET:
+        writeBlock(properties.jobDuetLaserMode);
+        break;
+    }
+  }
+  this.machineMode = currentSection.type;
+}
+FirmwareRepRap.prototype.laserOn = function (power) {
+  switch (properties.cutterMarlinMode) {
+    case 3:
+      var laser_pwm = power / 100 * 255;
+      writeBlock(mFormat.format(3), sFormat.format(laser_pwm));
+      return;
+  }
+  FirmwareMarlinLike.prototype.laserOn.apply(this, arguments);
 }
 
 function FirmwareGrbl() {
@@ -634,6 +712,8 @@ FirmwareGrbl.prototype.toolChange = function () {
   writeBlock(mFormat.format(6), tFormat.format(tool.number));
   writeBlock(gFormat.format(54));
 }
+FirmwareGrbl.prototype.probeTool = function () {
+}
 
 var currentFirmware;
 
@@ -641,10 +721,13 @@ var currentFirmware;
 function onOpen() {
   switch (properties.jobFirmware) {
     case 0:
-      currentFirmware = new FirmwareMarlin();
+      currentFirmware = new FirmwareMarlin20();
       break;
     case 1:
       currentFirmware = new FirmwareGrbl();
+      break;
+    case 2:
+      currentFirmware = new FirmwareRepRap();
       break;
   }
   currentFirmware.init();
@@ -722,6 +805,9 @@ function onSection() {
   }
 
   currentFirmware.flushMotions();
+
+  currentFirmware.section(); //adjust mode
+
   onCommand(COMMAND_START_SPINDLE);
   onCommand(COMMAND_COOLANT_ON);
   // Display section name in LCD
@@ -935,7 +1021,7 @@ function onCommand(command) {
     case COMMAND_TOOL_MEASURE:
       if (tool.jetTool)
         return;
-      probeTool();
+      currentFirmware.probeTool();
       return;
   }
 }
@@ -1097,7 +1183,7 @@ function toolChange() {
 function probeTool() {
   if (properties.gcodeProbeFile == "") {
     writeActivityComment(" --- PROBE TOOL begin ---");
-    writeBlock(mFormat.format(0), " Attach ZProbe");
+    this.askUser("Attach ZProbe", "Probe", false);
     // refer http://marlinfw.org/docs/gcode/G038.html
     if (properties.probeUseHomeZ) {
       writeBlock(gFormat.format(28), 'Z');
@@ -1108,7 +1194,7 @@ function probeTool() {
     if (properties.toolChangeZ != "") { // move up tool to safe height again after probing
       rapidMovementsZ(propertyMmToUnit(properties.toolChangeZ));
     }
-    writeBlock(mFormat.format(0), " Detach ZProbe");
+    this.askUser("Detach ZProbe", "Probe", false);
     writeActivityComment(" --- PROBE TOOL end ---");
   } else {
     loadFile(properties.gcodeProbeFile);

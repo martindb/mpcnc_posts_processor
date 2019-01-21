@@ -9,6 +9,7 @@ Supported firmwares:
 - Marlin 2.0
 - Repetier firmware 1.0.3 (not tested. gcode is same as for Marlin)
 - GRBL 1.1
+- RepRap firmware (Duet3d) 
 
 Some design points:
 - Setup operation types: Milling, Water/Laser/Plasma
@@ -43,7 +44,8 @@ Job: Line numbers|Show sequence numbers.|**false**|
 Job: Line start|First sequence number.|**10**|
 Job: Line increment|Increment for sequence numbers.|**1**|
 Job: Separate words|Specifies that the words should be separated with a white space.|**true**|
-
+Job: Duet: Milling Mode|GCode command to setup Duet3d milling mode.|**"M453 P2 I0 R30000 F200"**|
+Job: Duet: Laser Mode|GCode command to setup Duet3d laser mode.|**"M452 P2 I0 R255 F200"**|
 
 ## Group 2: Tool change
 

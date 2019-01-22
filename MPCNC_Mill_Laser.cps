@@ -1118,7 +1118,6 @@ function rapidMovementsXY(_x, _y) {
       return;
     }
     f = fOutput.format(propertyMmToUnit(properties.jobTravelSpeedXY));
-    fOutput.reset();
     writeBlock(gMotionModal.format(0), x, y, f);
   }
 }
@@ -1130,7 +1129,6 @@ function rapidMovementsZ(_z) {
       return;
     }
     f = fOutput.format(propertyMmToUnit(properties.jobTravelSpeedZ));
-    fOutput.reset();
     writeBlock(gMotionModal.format(0), z, f);
   }
 }

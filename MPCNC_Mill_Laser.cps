@@ -541,6 +541,7 @@ FirmwareMarlinLike.prototype.toolChange = function () {
   this.flushMotions();
   // Go to tool change position
   onRapid(propertyMmToUnit(properties.toolChangeX), propertyMmToUnit(properties.toolChangeY), propertyMmToUnit(properties.toolChangeZ));
+  currentFirmware.flushMotions();
   // turn off spindle and coolant
   onCommand(COMMAND_COOLANT_OFF);
   onCommand(COMMAND_STOP_SPINDLE);
@@ -571,9 +572,11 @@ FirmwareMarlinLike.prototype.probeTool = function () {
     writeBlock(gMotionModal.format(38.3), fFormat.format(propertyMmToUnit(properties.probeG38Speed)), zFormat.format(propertyMmToUnit(properties.probeG38Target)));
   }
   writeBlock(gFormat.format(92), zFormat.format(propertyMmToUnit(properties.probeThickness))); // Set origin to initial position
+  resetAll();
   if (properties.toolChangeZ != "") { // move up tool to safe height again after probing
     rapidMovementsZ(propertyMmToUnit(properties.toolChangeZ));
   }
+  this.flushMotions();
   this.askUser("Detach ZProbe", "Probe", false);
 }
 
@@ -768,7 +771,15 @@ function onSection() {
 
   // Tool change
   if (properties.toolChangeEnabled && !isFirstSection() && tool.number != getPreviousSection().getTool().number) {
-    toolChange();
+    if (properties.gcodeToolFile == "") {
+      // Builtin tool change gcode
+      writeActivityComment(" --- CHANGE TOOL begin ---");
+      currentFirmware.toolChange();
+      writeActivityComment(" --- CHANGE TOOL end ---");
+    } else {
+      // Custom tool change gcode
+      loadFile(properties.gcodeToolFile);
+    }
   }
 
   if (properties.commentSections) {
@@ -804,8 +815,6 @@ function onSection() {
     writeComment(" Z Min: " + xyzFormat.format(currentSection.getGlobalZRange().getMinimum()) + " - Z Max: " + xyzFormat.format(currentSection.getGlobalZRange().getMaximum()));
   }
 
-  currentFirmware.flushMotions();
-
   currentFirmware.section(); //adjust mode
 
   onCommand(COMMAND_START_SPINDLE);
@@ -814,12 +823,17 @@ function onSection() {
   currentFirmware.display_text(" " + sectionComment);
 }
 
-// Called in every section end
-function onSectionEnd() {
+function resetAll()
+{
   xOutput.reset();
   yOutput.reset();
   zOutput.reset();
   fOutput.reset();
+}
+
+// Called in every section end
+function onSectionEnd() {
+  resetAll();
   writeActivityComment(" *** SECTION end ***");
   writeln("");
 }
@@ -1162,40 +1176,6 @@ function linearMovements(_x, _y, _z, _feed) {
     } else {
       writeBlock(gMotionModal.format(1), f);
     }
-  }
-}
-
-function toolChange() {
-  if (properties.gcodeToolFile == "") {
-    // Builtin tool change gcode
-    writeActivityComment(" --- CHANGE TOOL begin ---");
-    currentFirmware.toolChange();
-    writeActivityComment(" --- CHANGE TOOL end ---");
-  } else {
-    // Custom tool change gcode
-    loadFile(properties.gcodeToolFile);
-  }
-}
-
-// Probe tool
-function probeTool() {
-  if (properties.gcodeProbeFile == "") {
-    writeActivityComment(" --- PROBE TOOL begin ---");
-    this.askUser("Attach ZProbe", "Probe", false);
-    // refer http://marlinfw.org/docs/gcode/G038.html
-    if (properties.probeUseHomeZ) {
-      writeBlock(gFormat.format(28), 'Z');
-    } else {
-      writeBlock(gMotionModal.format(38.3), fFormat.format(propertyMmToUnit(properties.probeG38Speed)), zFormat.format(propertyMmToUnit(properties.probeG38Target)));
-    }
-    writeBlock(gFormat.format(92), zFormat.format(propertyMmToUnit(properties.probeThickness))); // Set origin to initial position
-    if (properties.toolChangeZ != "") { // move up tool to safe height again after probing
-      rapidMovementsZ(propertyMmToUnit(properties.toolChangeZ));
-    }
-    this.askUser("Detach ZProbe", "Probe", false);
-    writeActivityComment(" --- PROBE TOOL end ---");
-  } else {
-    loadFile(properties.gcodeProbeFile);
   }
 }
 

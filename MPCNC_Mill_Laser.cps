@@ -433,7 +433,7 @@ FirmwareMarlinLike.prototype.start = function () {
   }
 }
 FirmwareMarlinLike.prototype.end = function () {
-  this.display_text(" Job end");
+  this.display_text("Job end");
 }
 FirmwareMarlinLike.prototype.close = function () {
 }
@@ -462,7 +462,7 @@ FirmwareMarlinLike.prototype.spindleOff = function () {
   } else {
     writeBlock(mFormat.format(5));
   }
-  this.spindleEnabled = true;
+  this.spindleEnabled = false;
 }
 FirmwareMarlinLike.prototype.laserOn = function (power) {
   var laser_pwm = power / 100 * 255;
@@ -501,7 +501,7 @@ FirmwareMarlinLike.prototype.dwell = function (seconds) {
   writeBlock(gFormat.format(4), "S" + secFormat.format(seconds));
 }
 FirmwareMarlinLike.prototype.display_text = function (txt) {
-  writeBlock(mFormat.format(117), txt);
+  writeBlock(mFormat.format(117), (properties.jobSeparateWordsWithSpace ? "" : " ") + txt);
 }
 FirmwareMarlinLike.prototype.circular = function (clockwise, cx, cy, cz, x, y, z, feed) {
   if (!properties.jobUseArcs) {
@@ -534,7 +534,7 @@ FirmwareMarlinLike.prototype.circular = function (clockwise, cx, cy, cz, x, y, z
 }
 
 FirmwareMarlinLike.prototype.askUser = function (text, title, allowJog) {
-  writeBlock(mFormat.format(0), " " + text);
+  writeBlock(mFormat.format(0), (properties.jobSeparateWordsWithSpace ? "" : " ") + text);
 }
 
 FirmwareMarlinLike.prototype.toolChange = function () {
@@ -592,7 +592,7 @@ FirmwareRepRap.prototype.constructor = FirmwareRepRap;
 FirmwareRepRap.prototype.askUser = function (text, title, allowJog) {
   var v1 = " P\"" + text + "\" R\"" + title + "\" S3";
   var v2 = allowJog ? " X1 Y1 Z1" : "";
-  writeBlock(mFormat.format(291), v1 + v2);
+  writeBlock(mFormat.format(291), (properties.jobSeparateWordsWithSpace ? "" : " ") + v1 + v2);
 }
 FirmwareRepRap.prototype.section = function () {
   if(this.machineMode != currentSection.type)

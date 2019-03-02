@@ -820,7 +820,7 @@ function linearMovements(_x, _y, _z, _feed) {
     }    
   } else if (f) {
     if (getNextRecord().isMotion()) { // try not to output feed without motion
-      feedOutput.reset(); // force feed on next line
+      fOutput.reset(); // force feed on next line
     } else {
       writeBlock(gMotionModal.format(1), f);
     }

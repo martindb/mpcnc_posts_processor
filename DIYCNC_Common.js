@@ -685,6 +685,9 @@ function onCommand(command) {
         return;
       currentFirmware.probeTool();
       return;
+    case COMMAND_STOP:
+      writeBlock(mFormat.format(0));
+      return;
   }
 }
 

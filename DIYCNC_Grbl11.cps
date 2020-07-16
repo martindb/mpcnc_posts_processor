@@ -97,6 +97,10 @@ FirmwareGrbl.prototype.dwell = function (seconds) {
 FirmwareGrbl.prototype.display_text = function (txt) {
 }
 FirmwareGrbl.prototype.circular = function (clockwise, cx, cy, cz, x, y, z, feed) {
+    if (!properties.jobUseArcs) {
+        linearize(tolerance);
+        return;
+    }
     var start = getCurrentPosition();
 
     if (isFullCircle()) {

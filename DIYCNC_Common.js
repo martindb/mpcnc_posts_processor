@@ -707,7 +707,7 @@ function writeFirstSection() {
     if (pair.min == undefined || pair.min > rmin) {
       pair.min = rmin;
     }
-    if (pair.max == undefined || pair.min < rmin) {
+    if (pair.max == undefined || pair.max < rmax) {
       pair.max = rmax;
     }
   }

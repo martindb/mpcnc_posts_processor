@@ -300,6 +300,7 @@ vendor = "guffy1234";
 vendorUrl = "https://github.com/guffy1234/mpcnc_posts_processor";
 
 var sequenceNumber;
+var currentWorkOffset;
 
 // Formats
 var gFormat = createFormat({ prefix: "G", decimals: 1 });
@@ -387,6 +388,18 @@ function onOpen() {
   if (!properties.jobSeparateWordsWithSpace) {
     setWordSeparator("");
   }
+
+  currentWorkOffset = undefined;
+  // don't allow WCS 0 unless it is the only WCS used in the program
+  if ((getNumberOfSections() > 0) && (getSection(0).workOffset == 0)) {
+    for (var i = 0; i < getNumberOfSections(); ++i) {
+      if (getSection(i).workOffset > 0) {
+        error(localize("Using multiple work offsets is not possible if the initial work offset is 0."));
+        return;
+      }
+    }
+  }
+
 }
 
 // Called at end of gcode file
@@ -469,6 +482,32 @@ function onSection() {
   onCommand(COMMAND_COOLANT_ON);
   // Display section name in LCD
   currentFirmware.display_text(" " + sectionComment);
+
+  // wcs
+  var workOffset = currentSection.workOffset;
+  if (workOffset == 0) { // change work offset of 0 to 1
+    warningOnce(localize("Work offset has not been specified. Using G54 as WCS."), 0);
+    workOffset = 1;
+  }
+  
+  if (workOffset > 0) {
+    if (workOffset > 6) { // handle work offsets greater than 6
+      var code = workOffset - 6;
+      if (code > 3) {
+        error(localize("Work offset out of range."));
+        return;
+      }
+      if (workOffset != currentWorkOffset) {
+        writeBlock(gFormat.format(59) + "." + code); // G59.n
+        currentWorkOffset = workOffset;
+      }
+    } else { // handle work offsets 1-6
+      if (workOffset != currentWorkOffset) {
+        writeBlock(gFormat.format(53 + workOffset)); // G54->G59
+        currentWorkOffset = workOffset;
+      }
+    }
+  }
 }
 
 function resetAll()
